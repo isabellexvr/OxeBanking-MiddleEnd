@@ -15,3 +15,5 @@ bcrypt = "0.15.1"
 serde_json = "1.0.95"
 reqwest = { version = "0.12.8", features = ["json"] }
 openssl-sys = "0.9.103"
+tower = { version = "0.5.1", features = ["full"] }
+tower-http = { version = "0.6.0", features = ["cors"] }
