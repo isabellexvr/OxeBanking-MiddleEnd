@@ -5,6 +5,7 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation, Algorithm};
 use serde::{Serialize, Deserialize};
 use std::time::{SystemTime, UNIX_EPOCH};
+use reqwest::Client;
 
 // Secret key for signing and verifying JWT tokens
 const SECRET: &[u8] = b"my_secret_key"; // goes to .env later
@@ -32,6 +33,29 @@ fn mock_users() -> Vec<User> {
         email: "mockuser@example.com".to_string(),
         password,
     }]
+}
+
+async fn call_external_api() -> Result<String, reqwest::Error> {
+    // Create an HTTP client
+    let client = Client::new();
+
+    // Make a GET request to the external API
+    let response = client.get("http://localhost:3000/hello")
+        .send()
+        .await?;
+
+    // Get the response text
+    let text = response.text().await?;
+    Ok(text)
+}
+
+// Route to call the external API
+#[get("/external")]
+async fn call_external() -> Result<HttpResponse, Error> {
+    match call_external_api().await {
+        Ok(response) => Ok(HttpResponse::Ok().body(response)),
+        Err(_) => Ok(HttpResponse::InternalServerError().body("Failed to call external API")),
+    }
 }
 
 // Route to sign a JWT if the credentials are valid
@@ -121,6 +145,7 @@ async fn main() -> std::io::Result<()> {
             .service(health)  // Health check
             .service(login)   // Login route for signing JWT
             .service(protected_route)  // Protected route
+            .service(call_external)  // Route to call external API
     })
     .bind(("127.0.0.1", 8080))?
     .run()
