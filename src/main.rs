@@ -1,57 +1,29 @@
-use axum::{
-    routing::get,
-    response::Json,
-    Router,
-};
-use tokio::net::TcpListener;
-use serde::{Deserialize, Serialize};
-use reqwest::Client;
-use reqwest::Request;
-use axum::Extension;
-use std::future::{IntoFuture, Future};
-use reqwest::StatusCode;
+use actix_cors::Cors;
+use actix_web::{get, App, HttpServer, HttpResponse, Responder};
+use actix_web::http::header;
 
-pub mod controllers;
-mod routes;
-mod services;
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ApiResponse {
-    data: String,
+// Health check route
+#[get("/")]
+async fn health() -> impl Responder {
+    HttpResponse::Ok().json("API is healthy!")
 }
 
-pub async fn make_request_handler(Extension(client): Extension<Client>) -> Result<Json<ApiResponse>, (StatusCode, String)> {
-    // Make a request to another API
-    let res = client
-        .get("http://127.0.0.1:4000/hello")
-        .send()
-        .await
-        .map_err(|e| {
-            eprintln!("Error fetching data: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
-        })?;
-
-    // Parse the response as JSON
-    let api_response: ApiResponse = res.json().await.map_err(|e| {
-        eprintln!("Error parsing JSON: {}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
-    })?;
-
-    Ok(Json(api_response)) // Return the Json wrapped in Ok
-}
-
-#[tokio::main]
-async fn main() {
-
-    let listener = TcpListener::bind("127.0.0.1:3000")
-        .await
-        .expect("Unable to conne to connect to the server");
-
-    println!("Listening on {}", listener.local_addr().unwrap() );
-
-    let app = routes::app().await;
-
-    axum::serve(listener, app)
-        .await
-        .expect("Error serving application");
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    HttpServer::new(|| {
+        App::new()
+            // CORS setup to allow requests from any origin
+            .wrap(
+                Cors::default()
+                    .allow_any_origin()
+                    .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
+                    .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+                    .allowed_header(header::CONTENT_TYPE)
+                    .max_age(3600)
+            )
+            .service(health)  // Register the health route
+    })
+    .bind(("127.0.0.1", 8080))?
+    .run()
+    .await
 }
