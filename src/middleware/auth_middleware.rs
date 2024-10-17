@@ -1,53 +1,49 @@
-use actix_service::{Service, Transform};
-use actix_web::{dev::{ServiceRequest, ServiceResponse}, Error, HttpMessage};
-use futures_util::future::{ok, Ready, LocalBoxFuture};
-use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
-use std::rc::Rc;
+use std::future::{ready, Ready};
+use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation, Algorithm};
+use crate::dto::user::Claims;
 
-use crate::dto::user::Claims; // Import your Claims struct
 
-// Middleware struct
-pub struct JwtMiddleware {
-    secret: Rc<String>, // Shared secret for JWT verification
-}
+use actix_web::{
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    Error, HttpMessage,
+};
+use futures_util::future::LocalBoxFuture;
 
-impl JwtMiddleware {
-    pub fn new(secret: String) -> Self {
-        JwtMiddleware {
-            secret: Rc::new(secret),
-        }
-    }
-}
+const SECRET: &[u8] = b"my_secret_key"; // Carregar do .env mais tarde
 
-// Middleware Service implementation
-impl<S, B> Transform<S, ServiceRequest> for JwtMiddleware
+// There are two steps in middleware processing.
+// 1. Middleware initialization, middleware factory gets called with
+//    next service in chain as parameter.
+// 2. Middleware's call method gets called with normal request.
+pub struct SayHi;
+
+// Middleware factory is `Transform` trait
+// `S` - type of the next service
+// `B` - type of response's body
+impl<S, B> Transform<S, ServiceRequest> for SayHi
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
     B: 'static,
 {
     type Response = ServiceResponse<B>;
     type Error = Error;
-    type Transform = JwtMiddlewareService<S>;
     type InitError = ();
+    type Transform = SayHiMiddleware<S>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ok(JwtMiddlewareService {
-            service,
-            secret: Rc::clone(&self.secret),
-        })
+        ready(Ok(SayHiMiddleware { service }))
     }
 }
 
-pub struct JwtMiddlewareService<S> {
+pub struct SayHiMiddleware<S> {
     service: S,
-    secret: Rc<String>,
 }
 
-impl<S, B> Service<ServiceRequest> for JwtMiddlewareService<S>
+impl<S, B> Service<ServiceRequest> for SayHiMiddleware<S>
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
     B: 'static,
 {
@@ -55,49 +51,60 @@ where
     type Error = Error;
     type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
-    // Poll readiness of the underlying service
-    fn poll_ready(
-        &self,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
-        self.service.poll_ready(cx)
-    }
+    forward_ready!(service);
 
-    // Call the service
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        let secret = Rc::clone(&self.secret);
+       
+        /* if let Some(auth_header) = req.headers().get(AUTHORIZATION) {
+            // Convert the header value to a string and print it
+            if let Ok(auth_str) = auth_header.to_str() {
+                println!("Authorization: {}", auth_str);
+                let token = auth_str.replace("Bearer ", "");
+                println!("Token: {}", token);
+                let validation = Validation {
+                    validate_exp: false,
+                    algorithms: vec![Algorithm::HS256],
+                    ..Validation::default()
+                };
+                let key = DecodingKey::from_secret(secret.as_bytes());
+                let token_data = decode::<Claims>(&token, &key, &validation);
+            }
+        }else{
+            println!("Error: Authorization header is not a valid string");
+            Err(actix_web::error::ErrorUnauthorized("Invalid Authorization Header"));
+        } */
+
+        let auth_header = req.headers().get("Authorization");
+
+        if let Some(header_value) = auth_header {
+            if let Ok(auth_str) = header_value.to_str() {
+                let token = auth_str.replace("Bearer ", "");
+
+                match decode::<Claims>(
+                    &token,
+                    &DecodingKey::from_secret(SECRET),
+                    &Validation::new(Algorithm::HS256),
+                ){
+                    Ok(token_data) => println!("Token data: {:?}", token_data.claims),
+                    Err(_) => println!("Error: Invalid Token")
+                }
+
+            }else{
+                println!("Error: Authorization header is not a valid string");
+                return Box::pin(async { Err(actix_web::error::ErrorUnauthorized("Invalid Authorization Header")) });
+            }
+        }else{
+            println!("Error: Missing Authorization Header");
+            return Box::pin(async { Err(actix_web::error::ErrorUnauthorized("Missing Authorization Header")) });
+        }
+
+        let fut = self.service.call(req);
 
         Box::pin(async move {
-            // Extract the Authorization header
-            if let Some(auth_header) = req.headers().get("Authorization") {
-                if let Ok(auth_str) = auth_header.to_str() {
-                    // Strip the "Bearer " part from the header
-                    let token = auth_str.trim_start_matches("Bearer ").to_string(); // Create owned String
+            let res = fut.await?;
 
-                    // Decode the JWT token
-                    let validation = Validation::new(Algorithm::HS256);
-                    match decode::<Claims>(
-                        &token,
-                        &DecodingKey::from_secret(secret.as_bytes()),
-                        &validation,
-                    ) {
-                        Ok(_token_data) => {
-                            // If the token is valid, proceed with the request
-                            let res = self.service.call(req).await?;
-                            Ok(res)
-                        }
-                        Err(_) => {
-                            // If token is invalid, return Unauthorized response
-                            Err(actix_web::error::ErrorUnauthorized("Invalid Token"))
-                        }
-                    }
-                } else {
-                    Err(actix_web::error::ErrorUnauthorized("Invalid Authorization Header"))
-                }
-            } else {
-                // No Authorization header found
-                Err(actix_web::error::ErrorUnauthorized("Missing Authorization Header"))
-            }
+            println!("Hi, this be mr. middleware talking here.");
+            Ok(res)
         })
     }
 }

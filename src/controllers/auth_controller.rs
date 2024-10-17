@@ -43,6 +43,20 @@ async fn verify_jwt(req: actix_web::HttpRequest) -> Result<Claims, Error> {
 
 
 // Route to sign a JWT if the credentials are valid
+fn create_jwt_token(username: &str) -> Result<String, jsonwebtoken::errors::Error> {
+    let expiration = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs() as usize + 60 * 60; // Token valid for 1 hour
+
+    let claims = Claims {
+        sub: username.to_string(),
+        exp: expiration,
+    };
+
+    encode(&Header::default(), &claims, &EncodingKey::from_secret(SECRET))
+}
+
 #[post("/login")]
 async fn login(credentials: web::Json<User>) -> impl Responder {
     let users = mock_users();
@@ -51,19 +65,8 @@ async fn login(credentials: web::Json<User>) -> impl Responder {
     if let Some(user) = user {
         // Verify the password using bcrypt
         if verify(&credentials.password, &user.password).unwrap_or(false) {
-            // Create JWT claims
-            let expiration = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards")
-                .as_secs() as usize + 60 * 60; // Token valid for 1 hour
-
-            let claims = Claims {
-                sub: user.username.clone(),
-                exp: expiration,
-            };
-
-            // Sign the token
-            match encode(&Header::default(), &claims, &EncodingKey::from_secret(SECRET)) {
+            // Create JWT token
+            match create_jwt_token(&user.username) {
                 Ok(token) => {
                     // Respond with the token in a JSON object
                     let response_body = serde_json::json!({ "auth_token": token });
