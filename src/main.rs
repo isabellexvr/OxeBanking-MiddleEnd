@@ -8,11 +8,13 @@ use crate::controllers::auth_controller::login;
 use crate::controllers::api_controller::call_external;
 use crate::controllers::auth_controller::protected_route;
 use crate::controllers::users_controller::sign_up;
+use crate::middleware::auth_middleware::JwtMiddleware;
 
 mod controllers;
 mod services;
 mod dto;
 mod routes;
+mod middleware;
 
 // Health check route
 #[get("/")]
@@ -36,9 +38,10 @@ async fn main() -> std::io::Result<()> {
             )
             .service(health)  // Health check
             .service(login)   // Login route for signing JWT
-            .service(protected_route)  // Protected route
-            .service(call_external)  // Route to call external API
             .service(sign_up)
+            .service(call_external)  // Route to call external API
+            .wrap(JwtMiddleware::new(jwt_secret.clone()))  // Apply JWT middleware
+            .service(protected_route)  // Protected route
     })
     .bind(("127.0.0.1", 3000))?
     .run()
