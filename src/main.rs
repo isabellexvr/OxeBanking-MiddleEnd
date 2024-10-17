@@ -1,11 +1,13 @@
 use actix_cors::Cors;
 use actix_web::{get, App, HttpServer, HttpResponse, Responder};
 use actix_web::http::header;
+
+use env_logger::Env;
+
 use crate::controllers::auth_controller::login;
 use crate::controllers::api_controller::call_external;
 use crate::controllers::auth_controller::protected_route;
-use env_logger::Env;
-use log::info;
+use crate::controllers::users_controller::sign_up;
 
 mod controllers;
 mod services;
@@ -36,6 +38,7 @@ async fn main() -> std::io::Result<()> {
             .service(login)   // Login route for signing JWT
             .service(protected_route)  // Protected route
             .service(call_external)  // Route to call external API
+            .service(sign_up)
     })
     .bind(("127.0.0.1", 3000))?
     .run()

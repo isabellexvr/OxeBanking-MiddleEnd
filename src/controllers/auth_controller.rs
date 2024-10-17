@@ -64,11 +64,15 @@ async fn login(credentials: web::Json<User>) -> impl Responder {
 
             // Sign the token
             match encode(&Header::default(), &claims, &EncodingKey::from_secret(SECRET)) {
-                Ok(token) => HttpResponse::Ok().json(token),
+                Ok(token) => {
+                    // Respond with the token in a JSON object
+                    let response_body = serde_json::json!({ "auth_token": token });
+                    HttpResponse::Ok().json(response_body)
+                }
                 Err(_) => HttpResponse::InternalServerError().finish(),
             }
         } else {
-            HttpResponse::Unauthorized().body("Invalid password")
+            HttpResponse::Unauthorized().body("Incorrect password")
         }
     } else {
         HttpResponse::Unauthorized().body("User not found")
