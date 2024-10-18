@@ -1,6 +1,9 @@
 use std::future::{ready, Ready};
 use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation, Algorithm};
 use crate::dto::user::Claims;
+use dotenv::dotenv;
+use env_logger;
+use std::env;
 
 
 use actix_web::{
@@ -9,7 +12,16 @@ use actix_web::{
 };
 use futures_util::future::LocalBoxFuture;
 
-const SECRET: &[u8] = b"my_secret_key"; // Carregar do .env mais tarde
+fn load_secret_key() -> Vec<u8> {
+    dotenv().ok(); // Load variables from .env
+
+    // Retrieve the secret from the environment, or panic if it's not set
+    env::var("SECRET")
+        .expect("SECRET not found in .env")
+        .into_bytes() // Convert the string to bytes (since jwt requires &[u8])
+}
+
+//const SECRET: &[u8] = b"my_secret_key"; // Carregar do .env mais tarde
 
 // There are two steps in middleware processing.
 // 1. Middleware initialization, middleware factory gets called with
@@ -54,25 +66,13 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-       
-        /* if let Some(auth_header) = req.headers().get(AUTHORIZATION) {
-            // Convert the header value to a string and print it
-            if let Ok(auth_str) = auth_header.to_str() {
-                println!("Authorization: {}", auth_str);
-                let token = auth_str.replace("Bearer ", "");
-                println!("Token: {}", token);
-                let validation = Validation {
-                    validate_exp: false,
-                    algorithms: vec![Algorithm::HS256],
-                    ..Validation::default()
-                };
-                let key = DecodingKey::from_secret(secret.as_bytes());
-                let token_data = decode::<Claims>(&token, &key, &validation);
-            }
-        }else{
-            println!("Error: Authorization header is not a valid string");
-            Err(actix_web::error::ErrorUnauthorized("Invalid Authorization Header"));
-        } */
+
+    
+        // Load the secret key from .env
+        let secret = load_secret_key();
+    
+        // Example usage with jwt encode/decode
+        let my_secret_key = &secret; // Use it as &[u8]
 
         let auth_header = req.headers().get("Authorization");
 
@@ -82,7 +82,7 @@ where
 
                 match decode::<Claims>(
                     &token,
-                    &DecodingKey::from_secret(SECRET),
+                    &DecodingKey::from_secret(my_secret_key),
                     &Validation::new(Algorithm::HS256),
                 ){
                     Ok(token_data) => println!("Token data: {:?}", token_data.claims),

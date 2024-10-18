@@ -7,7 +7,7 @@ use actix_web::{
 };
 use actix_web::http::header;
 use actix_web::web;
-
+use dotenv::dotenv;
 use env_logger::Env;
 
 use crate::controllers::auth_controller::login;
@@ -38,7 +38,10 @@ async fn my_middleware(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+
+    dotenv().ok();
     env_logger::init_from_env(Env::default().default_filter_or("info"));
+
     HttpServer::new(|| {
         App::new()
             // CORS setup to allow requests from any origin

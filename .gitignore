@@ -3,3 +3,5 @@ Cargo.lock
 
 # Exclude the target directory
 /target/
+
+.env
