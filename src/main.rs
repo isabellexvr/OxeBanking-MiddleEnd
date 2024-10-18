@@ -21,6 +21,7 @@ mod services;
 mod dto;
 mod routes;
 mod middleware;
+mod microservices;
 
 // Health check route
 async fn health() -> impl Responder {
