@@ -14,18 +14,18 @@ pub struct Address {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserDTO {
-    full_name: String,
-    profile_pic: String,        // Could be validated as a URL in actual code
-    cpf: String,
-    birthdate: NaiveDate,       // Requires 'chrono' for handling dates
-    marital_status: String,     // Will come from the select in the frontend
-    gross_mensal_income: f64,   // Double type in Rust
-    email: String,
-    phone_number: String,
-    is_admin: bool,                 
-    is_blocked: bool,
-    user_password: String,
-    created_at: NaiveDate,
-    updated_at: NaiveDate,
-    address: Address,           // Embedded object
+    pub full_name: String,
+    pub profile_pic: String,
+    pub cpf: String,
+    pub birthdate: String, // Use a string in ISO 8601 format
+    pub marital_status: String,
+    pub gross_mensal_income: f64,
+    pub email: String,
+    pub phone_number: String,
+    pub is_admin: bool,
+    pub is_blocked: bool,
+    pub user_password: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub address_id: i32, // Assuming you have the address ID available
 }
