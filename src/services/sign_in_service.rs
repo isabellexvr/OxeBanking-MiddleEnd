@@ -3,7 +3,8 @@ use crate::models::user::User; // Ensure User is imported
 use crate::microservices::admin::get_user_by_id; // Ensure get_user_by_id is imported
 use bcrypt::{verify as bcrypt_verify}; // Import the bcrypt verification function
 use jsonwebtoken::{encode, Header}; // Import necessary items for JWT
-use crate::your_module::create_jwt_token; // Import your token creation function
+use crate::services::auth_service::create_jwt_token; // Import your token creation function
+use actix_web::web;
 
 pub async fn sign_in_service(credentials: web::Json<User>) -> Result<(User, String), Error> {
     // Call get_user_by_id asynchronously and await the result
@@ -14,7 +15,7 @@ pub async fn sign_in_service(credentials: web::Json<User>) -> Result<(User, Stri
                 actix_web::error::ErrorInternalServerError("Error verifying password")
             })? {
                 // Passwords match, create a JWT token
-                match create_jwt_token(&user.username) {
+                match create_jwt_token(&user.full_name) {
                     Ok(token) => {
                         // Return the user and token
                         Ok((user, token))

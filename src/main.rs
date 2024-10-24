@@ -5,7 +5,7 @@ use actix_web::web;
 use dotenv::dotenv;
 use env_logger::Env;
 
-use crate::controllers::auth_controller::login;
+use crate::controllers::auth_controller::sign_in;
 use crate::controllers::api_controller::call_external;
 use crate::controllers::users_controller::sign_up;
 use crate::middleware::auth_middleware::Auth;
@@ -43,7 +43,7 @@ async fn main() -> std::io::Result<()> {
                     .allowed_header(header::CONTENT_TYPE)
                     .max_age(3600)
             )
-            .service(login)   // Login route for signing JWT
+            .service(sign_in)   // Login route for signing JWT
             .service(sign_up)
             .service(call_external)  // Route to call external API
             .route("/", web::get().to(health).wrap(Auth))

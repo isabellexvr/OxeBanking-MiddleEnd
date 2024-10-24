@@ -4,10 +4,11 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use std::time::{SystemTime, UNIX_EPOCH};
 use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation, Algorithm};
 use crate::dto::user::Claims;
-use crate::models::user::User;
+use crate::helpers::load_env;
 
-async fn verify_jwt(req: actix_web::HttpRequest) -> Result<Claims, Error> {
+pub async fn verify_jwt(req: actix_web::HttpRequest) -> Result<Claims, Error> {
     let auth_header = req.headers().get("Authorization");
+    let SECRET = &load_env("SECRET".to_string());
 
     if let Some(header_value) = auth_header {
         if let Ok(token) = header_value.to_str() {
@@ -31,7 +32,8 @@ async fn verify_jwt(req: actix_web::HttpRequest) -> Result<Claims, Error> {
 
 
 // Route to sign a JWT if the credentials are valid
-fn create_jwt_token(username: &str) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn create_jwt_token(username: &str) -> Result<String, jsonwebtoken::errors::Error> {
+    let SECRET = &load_env("SECRET".to_string());
     let expiration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
