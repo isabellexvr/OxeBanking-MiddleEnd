@@ -5,6 +5,8 @@ use dotenv::dotenv;
 use env_logger;
 use std::env;
 
+use crate::helpers::load_env;
+
 
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
@@ -12,14 +14,7 @@ use actix_web::{
 };
 use futures_util::future::LocalBoxFuture;
 
-fn load_secret_key() -> Vec<u8> {
-    dotenv().ok(); // Load variables from .env
 
-    // Retrieve the secret from the environment, or panic if it's not set
-    env::var("SECRET")
-        .expect("SECRET not found in .env")
-        .into_bytes() // Convert the string to bytes (since jwt requires &[u8])
-}
 
 //const SECRET: &[u8] = b"my_secret_key"; // Carregar do .env mais tarde
 
@@ -27,12 +22,12 @@ fn load_secret_key() -> Vec<u8> {
 // 1. Middleware initialization, middleware factory gets called with
 //    next service in chain as parameter.
 // 2. Middleware's call method gets called with normal request.
-pub struct SayHi;
+pub struct Auth;
 
 // Middleware factory is `Transform` trait
 // `S` - type of the next service
 // `B` - type of response's body
-impl<S, B> Transform<S, ServiceRequest> for SayHi
+impl<S, B> Transform<S, ServiceRequest> for Auth
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
@@ -41,19 +36,19 @@ where
     type Response = ServiceResponse<B>;
     type Error = Error;
     type InitError = ();
-    type Transform = SayHiMiddleware<S>;
+    type Transform = AuthMiddleware<S>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ready(Ok(SayHiMiddleware { service }))
+        ready(Ok(AuthMiddleware { service }))
     }
 }
 
-pub struct SayHiMiddleware<S> {
+pub struct AuthMiddleware<S> {
     service: S,
 }
 
-impl<S, B> Service<ServiceRequest> for SayHiMiddleware<S>
+impl<S, B> Service<ServiceRequest> for AuthMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
@@ -66,10 +61,9 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-
     
         // Load the secret key from .env
-        let secret = load_secret_key();
+        let secret = load_env("SECRET".to_string());
     
         // Example usage with jwt encode/decode
         let my_secret_key = &secret; // Use it as &[u8]

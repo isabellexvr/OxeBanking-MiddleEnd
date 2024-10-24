@@ -8,7 +8,7 @@ use env_logger::Env;
 use crate::controllers::auth_controller::login;
 use crate::controllers::api_controller::call_external;
 use crate::controllers::users_controller::sign_up;
-use crate::middleware::auth_middleware::SayHi;
+use crate::middleware::auth_middleware::Auth;
 
 mod controllers;
 mod services;
@@ -18,6 +18,8 @@ mod middleware;
 mod microservices;
 mod models;
 mod errors;
+mod helpers;
+
 
 // Health check route
 async fn health() -> impl Responder {
@@ -44,8 +46,7 @@ async fn main() -> std::io::Result<()> {
             .service(login)   // Login route for signing JWT
             .service(sign_up)
             .service(call_external)  // Route to call external API
-            .service(protected_route)  // Protected route
-            .route("/", web::get().to(health).wrap(SayHi))
+            .route("/", web::get().to(health).wrap(Auth))
     })
     .bind(("127.0.0.1", 3000))?
     .run()

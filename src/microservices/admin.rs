@@ -1,5 +1,5 @@
 use reqwest::Client;
-use crate::{dto::new_user_dto::UserDTO, errors::login_errors::ParseError};
+use crate::{dto::new_user_dto::UserDTO, errors::microservices_errors::ParseError};
 use actix_web::{get, post, web, HttpResponse, Responder, Error};
 use crate::models::user::User;
 use serde_json::from_str;
@@ -41,7 +41,7 @@ pub async fn get_all_users() -> Result<Vec<User>, ParseError> {
     Ok(users)
 }
 
-pub async fn get_user_by_id(id: i32) -> Result<User, ParseError> {
+pub async fn get_user_by_id(id: i32) -> Result<Option<User>, ParseError> {
     // Create an HTTP client
     let client = Client::new();
 
@@ -49,10 +49,14 @@ pub async fn get_user_by_id(id: i32) -> Result<User, ParseError> {
     let url = format!("http://localhost:8081/users/{}", id);
 
     // Make the GET request to fetch the user
-    let response = client.get(&url).send().await?;
+    let response = client.get(&url).send().await.map_err(ParseError::Reqwest)?;
 
-    // Deserialize the response body into User
-    let user: User = response.json().await?;
-
-    Ok(user)
+    // Check if the response status indicates success
+    if response.status().is_success() {
+        // Deserialize the response body into User
+        let user: User = response.json().await.map_err(ParseError::Reqwest)?; // Correctly mapping the serde error
+        Ok(Some(user)) // User found
+    } else {
+        Ok(None) // User not found
+    }
 }

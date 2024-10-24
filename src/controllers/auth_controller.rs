@@ -1,10 +1,10 @@
 use actix_web::{get, post, web, HttpResponse, Responder, Error};
-use crate::dto::user::User;
-use crate::dto::signin_dto::SignInDTO;
+use crate::services::sign_in_service;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use std::time::{SystemTime, UNIX_EPOCH};
 use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation, Algorithm};
 use crate::dto::user::Claims;
+use crate::models::user::User;
 
 const SECRET: &[u8] = b"my_secret_key"; // Carregar do .env mais tarde
 
@@ -85,25 +85,16 @@ async fn login(credentials: web::Json<User>) -> impl Responder {
 
 #[post("/sign-in")]
 async fn sign_in(credentials: web::Json<User>) -> impl Responder {
-    let users = mock_users();
-    let user = users.into_iter().find(|u| u.email == credentials.email);
+    let user_result = sign_in_service::sign_in_service(actix_web::web::Json(credentials.clone())).await;
 
-    if let Some(user) = user {
-        // Verify the password using bcrypt
-        if verify(&credentials.password, &user.password).unwrap_or(false) {
-            // Create JWT token
-            match create_jwt_token(&user.username) {
-                Ok(token) => {
-                    // Respond with the token in a JSON object
-                    let response_body = serde_json::json!({ "auth_token": token });
-                    HttpResponse::Ok().json(response_body)
-                }
-                Err(_) => HttpResponse::InternalServerError().finish(),
-            }
-        } else {
-            HttpResponse::Unauthorized().body("Incorrect password")
+    match user_result {
+        Ok(user) => {
+            // If user is found and password is verified, return user as JSON
+            HttpResponse::Ok().json(user)
         }
-    } else {
-        HttpResponse::Unauthorized().body("User not found")
+        Err(err) => {
+            // Handle the error appropriately
+            HttpResponse::InternalServerError().body(format!("Error: {:?}", err))
+        }
     }
 }
