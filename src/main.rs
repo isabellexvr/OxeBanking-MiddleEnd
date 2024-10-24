@@ -1,10 +1,5 @@
 use actix_cors::Cors;
-use actix_web::{get, App, HttpServer, HttpResponse, Responder};
-use actix_web::{
-    body::MessageBody,
-    dev::{ServiceRequest, ServiceResponse},
-    middleware::{from_fn, Next}, Error,
-};
+use actix_web::{ App, HttpServer, HttpResponse, Responder};
 use actix_web::http::header;
 use actix_web::web;
 use dotenv::dotenv;
@@ -12,7 +7,6 @@ use env_logger::Env;
 
 use crate::controllers::auth_controller::login;
 use crate::controllers::api_controller::call_external;
-use crate::controllers::auth_controller::protected_route;
 use crate::controllers::users_controller::sign_up;
 use crate::middleware::auth_middleware::SayHi;
 
@@ -22,19 +16,12 @@ mod dto;
 mod routes;
 mod middleware;
 mod microservices;
+mod models;
+mod errors;
 
 // Health check route
 async fn health() -> impl Responder {
     HttpResponse::Ok().json("API is healthy!")
-}
-
-async fn my_middleware(
-    req: ServiceRequest,
-    next: Next<impl MessageBody>,
-) -> Result<ServiceResponse<impl MessageBody>, Error> {
-    // pre-processing
-    next.call(req).await
-    // post-processing
 }
 
 #[actix_web::main]

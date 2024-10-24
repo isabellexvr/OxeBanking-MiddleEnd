@@ -1,20 +1,20 @@
 use actix_web::{get, post, web, HttpResponse, Responder, Error};
 use log::error; // Importa função de log de erro
 use crate::dto::new_user_dto::UserDTO;
-use crate::microservices::admin::call_admin_microservice;
+use crate::microservices::admin::create_a_new_user;
 use bcrypt::{hash, DEFAULT_COST};
 
 #[post("/sign-up")]
 async fn sign_up(credentials: web::Json<UserDTO>) -> impl Responder {
 
-    let hashedPassword = hash(&credentials.user_password, DEFAULT_COST).expect("Failed to hash password");
+    let hashed_password = hash(&credentials.user_password, DEFAULT_COST).expect("Failed to hash password");
 
     let user_info = UserDTO {
-        user_password: hashedPassword, // Use the hashed password
+        user_password: hashed_password, // Use the hashed password
         ..credentials.into_inner() // Copy other fields from credentials
     };
 
-    match call_admin_microservice(web::Json(user_info)).await {
+    match create_a_new_user(web::Json(user_info)).await {
         Ok(response) => {
             // Microservice call was successful, return the response
             HttpResponse::Ok().json(response)
