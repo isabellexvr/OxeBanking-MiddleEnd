@@ -18,3 +18,15 @@ pub struct User {
     pub updated_at: String,
     pub address_id: i32, // Assuming you have the address ID available
 }
+// olha o what
+
+pub struct Address {
+    pub id: i32,
+    pub zip_code: String,
+    pub city: String,
+    pub state: String,
+    pub uf: String,
+    pub street: String,
+    pub number: String,
+    pub complement: Option<String>,
+}

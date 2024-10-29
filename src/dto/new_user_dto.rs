@@ -27,5 +27,5 @@ pub struct UserDTO {
     pub user_password: String,
     pub created_at: String,
     pub updated_at: String,
-    pub address_id: i32, // Assuming you have the address ID available
+    pub address: Address, // Assuming you have the address ID available
 }
