@@ -5,10 +5,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation, Algorithm};
 use crate::dto::user::Claims;
 use crate::models::user::User;
+use crate::dto::signin_dto::SignInDTO;
 
 
 #[post("/sign-in")]
-async fn sign_in(credentials: web::Json<User>) -> impl Responder {
+async fn sign_in(credentials: web::Json<SignInDTO>) -> impl Responder {
     let user_result = sign_in_service::sign_in_service(actix_web::web::Json(credentials.clone())).await;
 
     match user_result {

@@ -32,8 +32,9 @@ pub async fn verify_jwt(req: actix_web::HttpRequest) -> Result<Claims, Error> {
 
 
 // Route to sign a JWT if the credentials are valid
-pub fn create_jwt_token(username: &str) -> Result<String, jsonwebtoken::errors::Error> {
-    let SECRET = &load_env("SECRET".to_string());
+pub fn create_jwt_token(username: &str, id: i32, profile_pic: &str) -> Result<String, jsonwebtoken::errors::Error> {
+    let SECRET: &Vec<u8> = &load_env("SECRET".to_string());
+    
     let expiration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
@@ -42,6 +43,8 @@ pub fn create_jwt_token(username: &str) -> Result<String, jsonwebtoken::errors::
     let claims = Claims {
         sub: username.to_string(),
         exp: expiration,
+        user_id: id,
+        profile_pic: profile_pic.to_string()
     };
 
     encode(&Header::default(), &claims, &EncodingKey::from_secret(SECRET))

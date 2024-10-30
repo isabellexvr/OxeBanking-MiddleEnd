@@ -1,5 +1,4 @@
 use serde::{Serialize, Deserialize};
-use chrono::NaiveDate;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Address {
@@ -25,7 +24,5 @@ pub struct UserDTO {
     pub is_admin: bool,
     pub is_blocked: bool,
     pub user_password: String,
-    pub created_at: String,
-    pub updated_at: String,
-    pub address_id: i32, // Assuming you have the address ID available
+    pub address: Address,
 }

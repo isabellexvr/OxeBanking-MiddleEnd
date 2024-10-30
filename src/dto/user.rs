@@ -16,4 +16,6 @@ pub struct User {
 pub struct Claims {
     pub sub: String,
     pub exp: usize,
+    pub user_id: i32,
+    pub profile_pic: String,
 }

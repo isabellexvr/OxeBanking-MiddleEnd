@@ -8,6 +8,7 @@ use env_logger::Env;
 use crate::controllers::auth_controller::sign_in;
 use crate::controllers::api_controller::call_external;
 use crate::controllers::users_controller::sign_up;
+use crate::{controllers::payments_controller::create_payment};
 use crate::middleware::auth_middleware::Auth;
 
 mod controllers;
@@ -34,7 +35,6 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
-            // CORS setup to allow requests from any origin
             .wrap(
                 Cors::default()
                     .allow_any_origin()
@@ -43,10 +43,15 @@ async fn main() -> std::io::Result<()> {
                     .allowed_header(header::CONTENT_TYPE)
                     .max_age(3600)
             )
-            .service(sign_in)   // Login route for signing JWT
+            .service(sign_in)  // Rota de login para geração de JWT
             .service(sign_up)
-            .service(call_external)  // Route to call external API
-            .route("/", web::get().to(health).wrap(Auth))
+            .service(call_external)  // Rota para chamada de API externa
+            .service(
+                web::scope("/payments")  
+                    .wrap(Auth)
+                    .service(create_payment)
+            )
+            .route("/", web::get().to(health))
     })
     .bind(("127.0.0.1", 3000))?
     .run()

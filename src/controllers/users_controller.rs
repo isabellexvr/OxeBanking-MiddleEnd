@@ -9,6 +9,8 @@ async fn sign_up(credentials: web::Json<UserDTO>) -> impl Responder {
 
     let hashed_password = hash(&credentials.user_password, DEFAULT_COST).expect("Failed to hash password");
 
+    println!("Hashed password: {}", hashed_password);
+
     let user_info = UserDTO {
         user_password: hashed_password, // Use the hashed password
         ..credentials.into_inner() // Copy other fields from credentials
