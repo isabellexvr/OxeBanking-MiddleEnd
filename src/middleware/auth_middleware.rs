@@ -2,7 +2,7 @@ use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, T
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
 use std::future::{ready, Ready};
-use crate::dto::user::Claims;
+use crate::dto::jwt::Claims;
 use crate::helpers::load_env;
 
 pub struct Auth;

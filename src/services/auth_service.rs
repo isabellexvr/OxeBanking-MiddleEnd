@@ -3,7 +3,7 @@ use crate::services::sign_in_service;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use std::time::{SystemTime, UNIX_EPOCH};
 use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation, Algorithm};
-use crate::dto::user::Claims;
+use crate::dto::jwt::Claims;
 use crate::helpers::load_env;
 
 pub async fn verify_jwt(req: actix_web::HttpRequest) -> Result<Claims, Error> {
