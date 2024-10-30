@@ -1,7 +1,6 @@
 //Aqui definimos o modelo de usuário, que deve possuir username, email e password
 //Como os dados são representados em nossa modelagem
 use serde::{Serialize, Deserialize};
-use chrono::NaiveDate;
 
 // Estrutura de usuário para login e autenticação
 #[derive(Serialize, Deserialize, Clone)]

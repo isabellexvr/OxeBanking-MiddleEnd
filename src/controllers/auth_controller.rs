@@ -1,12 +1,13 @@
 use actix_web::{get, post, web, HttpResponse, Responder, Error};
+use thiserror::Error;
 use crate::services::sign_in_service;
-use bcrypt::{hash, verify, DEFAULT_COST};
-use std::time::{SystemTime, UNIX_EPOCH};
-use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation, Algorithm};
-use crate::dto::jwt::Claims;
-use crate::models::user::User;
 use crate::dto::signin_dto::SignInDTO;
+use serde::Serialize;
 
+#[derive(Debug, Serialize)]
+struct AuthResponse {
+    auth_token: String,
+}
 
 #[post("/sign-in")]
 async fn sign_in(credentials: web::Json<SignInDTO>) -> impl Responder {
@@ -15,7 +16,10 @@ async fn sign_in(credentials: web::Json<SignInDTO>) -> impl Responder {
     match user_result {
         Ok(user) => {
             // If user is found and password is verified, return user as JSON
-            HttpResponse::Ok().json(user)
+            let response = AuthResponse {
+                auth_token: user,
+            };
+            HttpResponse::Ok().json(response)
         }
         Err(err) => {
             // Handle the error appropriately

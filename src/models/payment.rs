@@ -23,7 +23,7 @@ pub struct Payment {
     pub valor: i32,
     pub saldo: i32,
     pub fatura_pendente: Option<i32>,
-    pub destinatario: i32,
+    pub destinatario: i32, // poderia ser um option string ou int (destinatario do oxebanking ou externo)
     pub inserted_at: String,
     pub updated_at: String,
 }
