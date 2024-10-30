@@ -115,7 +115,7 @@ async fn main() -> std::io::Result<()> {
             )
             .configure(configure_app)
     })
-    .bind(("127.0.0.1", 3000))?
+    .bind(("0.0.0.0", 3000))?
     .run()
     .await
 

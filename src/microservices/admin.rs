@@ -93,3 +93,23 @@ pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<User>, ParseError> {
 
     Ok(Some(mocked_user))
 }
+
+pub async fn get_user_addresses(user_id: i32) -> Result<Vec<Address>, ParseError> {
+    // Create an HTTP client
+    let client = Client::new();
+
+    // Build the URL using the format! macro
+    let url = format!("http://localhost:8081/users/{}/addresses", user_id);
+
+    // Make the GET request to fetch the user's addresses
+    let response = client.get(&url).send().await.map_err(ParseError::Reqwest)?;
+
+    // Check if the response status indicates success
+    if response.status().is_success() {
+        // Deserialize the response body into Vec<Address>
+        let addresses: Vec<Address> = response.json().await.map_err(ParseError::Reqwest)?;
+        Ok(addresses) // Addresses found
+    } else {
+        Ok(vec![]) // No addresses found
+    }
+}

@@ -33,3 +33,4 @@ async fn sign_up(credentials: web::Json<UserDTO>) -> impl Responder {
 
     //HttpResponse::Ok() // Return a JSON response
 }
+
