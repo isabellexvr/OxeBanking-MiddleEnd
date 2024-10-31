@@ -19,19 +19,19 @@
 - `src/lib.rs`  
   > Biblioteca principal.
 - `src/controllers/`  
-  > Controladores da aplicação.
+  > Controladores da aplicação. Definição das rotas para requisição.
 - `src/dto/`  
-  > Objetos de transferência de dados.
+  > Objetos de transferência de dados. Dados recebidos do Front-End.
 - `src/errors/`  
   > Tratamento de erros.
 - `src/microsservices/`  
-  > Microsserviços.
+  > Microsserviços. Aqui realizamos as chamadas para as APIs dos microsserviços.
 - `src/middleware/`  
   > Middleware de autenticação.
 - `src/middlewares/`  
   > Outros middlewares.
 - `src/models/`  
-  > Modelos de dados.
+  > Modelos de dados. Aqui definimos como os dados serão salvos no Banco de Dados.
 - `src/routes/`  
   > Definições de rotas.
 - `src/services/`  
