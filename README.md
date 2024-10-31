@@ -1,40 +1,42 @@
 # Como rodar?
-- cargo clean
-- cargo build
-- cargo run
+- **cargo clean**  
+  Limpa os artefatos de compilação.
+- **cargo build**  
+  Compila o projeto.
+- **cargo run**  
+  Executa o projeto.
 
 # Como rodar para desenvolvimento? (reiniciar o server a cada mudança)
-- cargo install cargo-watch
-- cargo watch -x 'run'
+- **cargo install cargo-watch**  
+  Instala a ferramenta cargo-watch.
+- **cargo watch -x 'run'**  
+  Observa mudanças no código e reinicia o servidor automaticamente.
 
+# Estrutura do Projeto
 
-
-
-
-o que falta de pagamentos?
-- pagamento de boleto (codigo de barras)
-- rota de pegar todos os pagamentos de um user_id especifico
-- mudar a logica do campo "destinatario"
-
-{
-  "descricao": "Pagamento de conta",
-  "id_usuario": 12345,
-  "metodo_pagamento": "boleto",
-  "valor": "100.00",
-  "saldo": "200.00",
-  "destinatario": "codigo de barras aqui?"
-}
-
-
-pub struct Payment {
-    pub id: i32,
-    pub descricao: String,
-    pub id_usuario: i32,
-    pub metodo_pagamento: String,
-    pub valor: i32,
-    pub saldo: i32,
-    pub fatura_pendente: Option<i32>,
-    pub destinatario: i32, // poderia ser um option string ou int (destinatario do oxebanking ou externo)
-    pub inserted_at: String,
-    pub updated_at: String,
-}
+- `src/main.rs`  
+  > Ponto de entrada da aplicação.
+- `src/lib.rs`  
+  > Biblioteca principal.
+- `src/controllers/`  
+  > Controladores da aplicação.
+- `src/dto/`  
+  > Objetos de transferência de dados.
+- `src/errors/`  
+  > Tratamento de erros.
+- `src/microsservices/`  
+  > Microsserviços.
+- `src/middleware/`  
+  > Middleware de autenticação.
+- `src/middlewares/`  
+  > Outros middlewares.
+- `src/models/`  
+  > Modelos de dados.
+- `src/routes/`  
+  > Definições de rotas.
+- `src/services/`  
+  > Lógica de negócios.
+- `src/utils/`  
+  > Utilitários e funções auxiliares.
+- `Cargo.toml`  
+  > Arquivo de configuração do Cargo, com todas as dependências necessárias.
