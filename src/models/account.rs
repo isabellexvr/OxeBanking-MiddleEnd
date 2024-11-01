@@ -6,6 +6,7 @@ pub struct AccountBD{
     pub user_id: i32,
     pub balance: i32,
     pub gross_mensal_income: i32,
+    pub pix_keys: Vec<AccountPixKeysBD>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
