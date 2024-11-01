@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+syn = { version = "2.0.86", features = ["parsing", "printing", "derive", "proc-macro"] }
 tokio = { version = "1.35.1", features = ["full"] }
 serde = { version = "1.0.195", features = ["derive"] }
 chrono = { version = "0.4.34", features = ["serde"] }
@@ -21,4 +22,5 @@ log = "0.4.22"
 env_logger = "0.11.5"
 dotenv = "0.15"
 thiserror = "1.0.65"
-sqlx = { version = "0.5", features = ["sqlite", "runtime-actix-native-tls"] }
+sqlx = { version = "0.8.2"}
+sqlx-macros = { version = "0.8.2"}
