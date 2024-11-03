@@ -98,9 +98,9 @@ fn configure_app(cfg: &mut web::ServiceConfig) {
 }
 
 
-#[derive(Serialize)]
+/* #[derive(Serialize)]
 struct Test {
-    id: i32,
+    id: i64,
     name: String,
     email: String,
 }
@@ -112,24 +112,23 @@ async fn get_users(pool: web::Data<SqlitePool>) -> impl Responder {
         .unwrap();
 
     web::Json(users)
-}
+} */
 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
 
-    let pool = SqlitePool::connect("sqlite://test.db").await.unwrap();
-
+    
     dotenv().ok();
     env_logger::init_from_env(Env::default().default_filter_or("info"));
-
+    
+    let pool = SqlitePool::connect("sqlite://middle-mocked.db").await.unwrap();
     print_routes();
     
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .wrap(RouteLogger)
-            .route("/test", web::get().to(get_users))
             .wrap(
                 Cors::default()
                     .allow_any_origin()

@@ -1,7 +1,7 @@
 use actix_web::{get, post, web, HttpResponse, Responder, Error};
 use log::error; // Importa função de log de erro
 use crate::dto::new_user_dto::UserDTO;
-use crate::microservices::admin::create_a_new_user;
+use crate::microservices::admin::create_a_new_mocked_user;
 use bcrypt::{hash, DEFAULT_COST};
 
 #[post("/sign-up")]
@@ -16,7 +16,7 @@ async fn sign_up(credentials: web::Json<UserDTO>) -> impl Responder {
         ..credentials.into_inner() // Copy other fields from credentials
     };
 
-    match create_a_new_user(web::Json(user_info)).await {
+    match create_a_new_mocked_user(web::Json(user_info)).await {
         Ok(response) => {
             // Microservice call was successful, return the response
             HttpResponse::Ok().json(response)

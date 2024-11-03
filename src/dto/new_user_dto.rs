@@ -2,13 +2,14 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Address {
-    zip_code: String,
-    city: String,
-    state: String,
-    uf: String,
-    street: String,
-    number: String,
-    complement: Option<String>,
+    pub zip_code: String,
+    pub city: String,
+    pub state: String,
+    pub uf: String,
+    pub street: String,
+    pub number: String,
+    pub complement: Option<String>,
+    pub is_main: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
