@@ -18,7 +18,7 @@ CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     full_name TEXT NOT NULL,
     profile_pic TEXT NOT NULL,
-    cpf TEXT NOT NULL,
+    cpf TEXT NOT NULL UNIQUE,
     birthdate TEXT NOT NULL, -- ISO 8601 format
     marital_status TEXT NOT NULL,
     gross_mensal_income INTEGER NOT NULL,

@@ -1,4 +1,5 @@
 use serde::{Serialize, Deserialize};
+use sqlx::FromRow;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct User {
@@ -19,7 +20,7 @@ pub struct User {
     pub address: Address, // Assuming you have the address ID available
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
 pub struct UserBD {
     pub id: i64,
     pub full_name: String,

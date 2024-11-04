@@ -13,4 +13,7 @@ pub enum ParseError {
     #[error("SQLx error: {0}")]
     Sqlx(sqlx::Error),
 
+    #[error("{0}")]
+    Custom(String),
+
 }

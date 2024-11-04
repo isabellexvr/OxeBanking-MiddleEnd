@@ -5,8 +5,32 @@ use crate::models::user::{User, Address, UserBD};
 use serde_json::from_str;
 use sqlx::sqlite::SqlitePool;
 
-pub async fn create_a_new_mocked_user(credentials: web::Json<UserDTO>) -> Result<String, ParseError> {
+pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<UserBD>, ParseError> {
+
     let pool = SqlitePool::connect("sqlite://middle-mocked.db").await.unwrap();
+
+    let user = sqlx::query_as::<_, UserBD>(
+        r#"
+        SELECT * FROM users
+        WHERE cpf = ?
+        "#,
+    )
+    .bind(cpf)
+    .fetch_optional(&pool)
+    .await
+    .map_err(ParseError::Sqlx)?;
+
+    Ok(user)
+}
+
+pub async fn create_a_new_mocked_user(credentials: web::Json<UserDTO>) -> Result<User, ParseError> {
+    let pool = SqlitePool::connect("sqlite://middle-mocked.db").await.unwrap();
+
+    let existing_user = get_user_by_cpf(&credentials.cpf).await?;
+
+    if existing_user.is_some() {
+        return Err(ParseError::Custom("CPF já registrado.".to_string()));
+    }
 
     let user = User {
         id: 0, // Assuming id is auto-incremented
@@ -80,7 +104,7 @@ pub async fn create_a_new_mocked_user(credentials: web::Json<UserDTO>) -> Result
     .await
     .unwrap();
 
-    Ok("User created successfully".to_string())
+    Ok(user)
 }
 
 pub async fn create_a_new_user(credentials: web::Json<UserDTO>) -> Result<String, ParseError> {
@@ -141,24 +165,7 @@ pub async fn get_user_by_id(id: i32) -> Result<Option<User>, ParseError> {
 }
 
 
-pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<UserBD>, ParseError> {
 
-    let pool = SqlitePool::connect("sqlite://middle-mocked.db").await.unwrap();
-
-    let user = sqlx::query_as!(
-        UserBD,
-        r#"
-        SELECT * FROM users
-        WHERE cpf = ?
-        "#,
-        cpf
-    )
-    .fetch_optional(&pool)
-    .await
-    .map_err(ParseError::Sqlx)?;
-
-    Ok(user)
-}
 
 pub async fn get_user_addresses(user_id: i32) -> Result<Vec<Address>, ParseError> {
     // Create an HTTP client
