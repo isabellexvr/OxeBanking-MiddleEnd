@@ -18,7 +18,7 @@ pub async fn sign_in_service(credentials: web::Json<SignInDTO>) -> Result<(Strin
                 actix_web::error::ErrorInternalServerError("Incorrect Password")
             })? {
                 // Passwords match, create a JWT token
-                match create_jwt_token(&user.full_name, user.id, &user.profile_pic) {
+                match create_jwt_token(&user.full_name, user.id.try_into().unwrap(), &user.profile_pic) {
                     Ok(token) => {
                         // Return the user and token
                         Ok((token))

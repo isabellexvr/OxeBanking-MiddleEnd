@@ -1,7 +1,7 @@
 use reqwest::Client;
 use crate::{dto::new_user_dto::UserDTO, errors::microservices_errors::ParseError};
 use actix_web::{get, post, web, HttpResponse, Responder, Error};
-use crate::models::user::{User, Address};
+use crate::models::user::{User, Address, UserBD};
 use serde_json::from_str;
 use sqlx::sqlite::SqlitePool;
 
@@ -141,36 +141,23 @@ pub async fn get_user_by_id(id: i32) -> Result<Option<User>, ParseError> {
 }
 
 
-pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<User>, ParseError> {
-    let mocked_user = User {
-        id: 1,
-        full_name: "John Doe".to_string(),
-        profile_pic: "https://example.com/profile.jpg".to_string(),
-        cpf: "123.456.789-00".to_string(),
-        birthdate: "1990-01-01".to_string(),
-        marital_status: "Single".to_string(),
-        gross_mensal_income: 5000,
-        email: "example@gmail.com".to_string(),
-        phone_number: "+55 11 99999-9999".to_string(),
-        is_admin: false,
-        is_blocked: false,
-        user_password: "$2b$12$QgGfGwKNepVKIxAaglKLVOqv4CvGKpYxVMERNRltfvLuCvXUVOeRW".to_string(), //senha123
-        created_at: "2021-01-01".to_string(),
-        updated_at: "2021-01-01".to_string(),
-        address: Address {
-            id: 1,
-            zip_code: "12345-678".to_string(),
-            city: "City".to_string(),
-            state: "State".to_string(),
-            uf: "ST".to_string(),
-            street: "Street".to_string(),
-            number: "123".to_string(),
-            complement: Some("Complement".to_string()),
-            is_main: true,
-        },
-    };
+pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<UserBD>, ParseError> {
 
-    Ok(Some(mocked_user))
+    let pool = SqlitePool::connect("sqlite://middle-mocked.db").await.unwrap();
+
+    let user = sqlx::query_as!(
+        UserBD,
+        r#"
+        SELECT * FROM users
+        WHERE cpf = ?
+        "#,
+        cpf
+    )
+    .fetch_optional(&pool)
+    .await
+    .map_err(ParseError::Sqlx)?;
+
+    Ok(user)
 }
 
 pub async fn get_user_addresses(user_id: i32) -> Result<Vec<Address>, ParseError> {

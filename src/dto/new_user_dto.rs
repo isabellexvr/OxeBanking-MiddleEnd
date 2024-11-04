@@ -19,7 +19,7 @@ pub struct UserDTO {
     pub cpf: String,
     pub birthdate: String, // Use a string in ISO 8601 format
     pub marital_status: String,
-    pub gross_mensal_income: i32,
+    pub gross_mensal_income: i64,
     pub email: String,
     pub phone_number: String,
     pub is_admin: bool,
