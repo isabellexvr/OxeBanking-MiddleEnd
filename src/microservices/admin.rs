@@ -1,188 +1,89 @@
-use reqwest::Client;
-use crate::{dto::new_user_dto::UserDTO, errors::microservices_errors::ParseError};
-use actix_web::{get, post, web, HttpResponse, Responder, Error};
-use crate::models::user::{User, Address, UserBD};
-use serde_json::from_str;
-use sqlx::sqlite::SqlitePool;
+use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
+use crate::models::user::{User, Address};
+use crate::dto::new_user_dto::UserDTO;
+use crate::schema::{users, addresses};
+use crate::errors::microservices_errors::ParseError;
 
-pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<UserBD>, ParseError> {
-
-    let pool = SqlitePool::connect("sqlite://middle-mocked.db").await.unwrap();
-
-    let user = sqlx::query_as::<_, UserBD>(
-        r#"
-        SELECT * FROM users
-        WHERE cpf = ?
-        "#,
-    )
-    .bind(cpf)
-    .fetch_optional(&pool)
-    .await
-    .map_err(ParseError::Sqlx)?;
-
-    Ok(user)
+pub fn establish_connection() -> SqliteConnection {
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    SqliteConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
 }
 
-pub async fn create_a_new_mocked_user(credentials: web::Json<UserDTO>) -> Result<User, ParseError> {
-    let pool = SqlitePool::connect("sqlite://middle-mocked.db").await.unwrap();
+pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<User>, ParseError> {
+    use crate::schema::users::dsl::*;
 
-    let existing_user = get_user_by_cpf(&credentials.cpf).await?;
-
-    if existing_user.is_some() {
-        return Err(ParseError::Custom("CPF já registrado.".to_string()));
-    }
-
-    let user = User {
-        id: 0, // Assuming id is auto-incremented
-        full_name: credentials.full_name.clone(),
-        profile_pic: credentials.profile_pic.clone(),
-        cpf: credentials.cpf.clone(),
-        birthdate: credentials.birthdate.clone(),
-        marital_status: credentials.marital_status.clone(),
-        gross_mensal_income: credentials.gross_mensal_income,
-        email: credentials.email.clone(),
-        phone_number: credentials.phone_number.clone(),
-        is_admin: credentials.is_admin,
-        is_blocked: credentials.is_blocked,
-        user_password: credentials.user_password.clone(),
-        created_at: chrono::Utc::now().to_string(),
-        updated_at: chrono::Utc::now().to_string(),
-        address: Address {
-            id: 0, // Assuming id is auto-incremented
-            zip_code: credentials.address.zip_code.clone(),
-            city: credentials.address.city.clone(),
-            state: credentials.address.state.clone(),
-            uf: credentials.address.uf.clone(),
-            street: credentials.address.street.clone(),
-            number: credentials.address.number.clone(),
-            complement: credentials.address.complement.clone(),
-            is_main: credentials.address.is_main,
-        },
-    };
-
-    let address_id = sqlx::query!(
-        r#"
-        INSERT INTO addresses (zip_code, city, state, uf, street, number, complement, is_main)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        RETURNING id
-        "#,
-        user.address.zip_code,
-        user.address.city,
-        user.address.state,
-        user.address.uf,
-        user.address.street,
-        user.address.number,
-        user.address.complement,
-        user.address.is_main,
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap()
-    .id;
-
-    sqlx::query!(
-        r#"
-        INSERT INTO users (full_name, profile_pic, cpf, birthdate, marital_status, gross_mensal_income, email, phone_number, is_admin, is_blocked, user_password, created_at, updated_at, address_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        "#,
-        user.full_name,
-        user.profile_pic,
-        user.cpf,
-        user.birthdate,
-        user.marital_status,
-        user.gross_mensal_income,
-        user.email,
-        user.phone_number,
-        user.is_admin,
-        user.is_blocked,
-        user.user_password,
-        user.created_at,
-        user.updated_at,
-        address_id
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    Ok(user)
-}
-
-pub async fn create_a_new_user(credentials: web::Json<UserDTO>) -> Result<String, ParseError> {
-    // Create an HTTP client
-    let client = Client::new();
-
-    // Make the POST request to create a new user
-    let response = client
-        .post("http://localhost:8081/users") // API endpoint
-        .json(&credentials) // Send credentials as JSON in the body
-        .send()
-        .await
-        .map_err(ParseError::Reqwest)?; // Convert reqwest error to ParseError
-
-    // Get the response body as text
-    let text = response.text().await.map_err(ParseError::Reqwest)?; // Convert reqwest error to ParseError
-
-    Ok(text) // Return the response text
-}
+    let mut connection = establish_connection();
+    let result = users
+        .filter(cpf.eq(cpf))
+        .select(User::as_select())
+        .first::<User>(&mut connection)
+        .optional()
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
 
 
-pub async fn get_all_users() -> Result<Vec<User>, ParseError> {
-    // Create an HTTP client
-    let client = Client::new();
-
-    // Make the GET request to fetch users
-    let response = client
-        .get("http://localhost:8081/users") // API endpoint
-        .send()
-        .await
-        .map_err(ParseError::Reqwest)?; // Convert reqwest error to ParseError
-
-    let body = response.text().await.map_err(ParseError::Reqwest)?; // Convert reqwest error to ParseError
-
-    let users: Vec<User> = from_str(&body).map_err(ParseError::Serde)?; // Convert serde error to ParseError
-
-    Ok(users)
+    Ok(result)
 }
 
 pub async fn get_user_by_id(id: i32) -> Result<Option<User>, ParseError> {
-    // Create an HTTP client
-    let client = Client::new();
+    use crate::schema::users::dsl::*;
 
-    // Build the URL using the format! macro
-    let url = format!("http://localhost:8081/users/{}", id);
+    let mut connection = establish_connection();
+    let result = users
+        .filter(id.eq(id))
+        .select(User::as_select())
+        .first::<User>(&mut connection)
+        .optional()
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
 
-    // Make the GET request to fetch the user
-    let response = client.get(&url).send().await.map_err(ParseError::Reqwest)?;
-
-    // Check if the response status indicates success
-    if response.status().is_success() {
-        // Deserialize the response body into User
-        let user: User = response.json().await.map_err(ParseError::Reqwest)?; // Correctly mapping the serde error
-        Ok(Some(user)) // User found
-    } else {
-        Ok(None) // User not found
-    }
+    Ok(result)
 }
 
+pub async fn insert_user(user_info: UserDTO) -> Result<User, ParseError> {
+    use crate::schema::users::dsl::*;
 
+    let mut connection = establish_connection();
 
+    let created_address_id = diesel::insert_into(addresses::table)
+        .values(&Address {
+            id: None,
+            is_main: true,
+            street: user_info.address.street.clone(),
+            uf: user_info.address.uf.clone(),
+            number: user_info.address.number.clone(),
+            complement: user_info.address.complement.clone(),
+            city: user_info.address.city.clone(),
+            state: user_info.address.state.clone(),
+            zip_code: user_info.address.zip_code.clone(),
+        })
+        .execute(&mut connection)
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
 
-pub async fn get_user_addresses(user_id: i32) -> Result<Vec<Address>, ParseError> {
-    // Create an HTTP client
-    let client = Client::new();
+    diesel::insert_into(users)
+        .values(&User {
+            id: None,
+            full_name: user_info.full_name.clone(),
+            profile_pic: user_info.profile_pic.clone(),
+            cpf: user_info.cpf.clone(),
+            birthdate: user_info.birthdate.clone(),
+            marital_status: user_info.marital_status.clone(),
+            gross_mensal_income: user_info.gross_mensal_income as i32,
+            email: user_info.email.clone(),
+            phone_number: user_info.phone_number.clone(),
+            is_admin: user_info.is_admin,
+            is_blocked: user_info.is_blocked,
+            user_password: user_info.user_password.clone(),
+            address_id: created_address_id as i32,
+            created_at: "".to_string(),
+            updated_at: "".to_string(),
+        })
+        .execute(&mut connection)
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
 
-    // Build the URL using the format! macro
-    let url = format!("http://localhost:8081/users/{}/addresses", user_id);
+    let inserted_user = users
+        .order(id.desc())
+        .first::<User>(&mut connection)
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
 
-    // Make the GET request to fetch the user's addresses
-    let response = client.get(&url).send().await.map_err(ParseError::Reqwest)?;
-
-    // Check if the response status indicates success
-    if response.status().is_success() {
-        // Deserialize the response body into Vec<Address>
-        let addresses: Vec<Address> = response.json().await.map_err(ParseError::Reqwest)?;
-        Ok(addresses) // Addresses found
-    } else {
-        Ok(vec![]) // No addresses found
-    }
+    Ok(inserted_user)
 }

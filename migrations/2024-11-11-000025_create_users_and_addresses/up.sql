@@ -1,3 +1,4 @@
+-- Your SQL goes here
 -- migrations/{timestamp}_create_users_and_addresses_tables.sql
 
 -- Create the addresses table

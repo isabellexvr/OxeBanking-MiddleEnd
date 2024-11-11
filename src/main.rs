@@ -26,6 +26,7 @@ mod microservices;
 mod models;
 mod errors;
 mod helpers;
+mod schema;
 
 struct RouteLogger;
 
