@@ -1,142 +1,283 @@
-use diesel::prelude::*;
-use diesel::sqlite::SqliteConnection;
-use crate::schema::{insurances, insurance_types, insurance_descriptions};
-use crate::errors::microservices_errors::ParseError;
-use diesel::dsl::sql;
-use crate::models::insurances::InsuranceResponse;
-use serde::{Serialize, Deserialize};
-use diesel::sql_types::Text;
+use reqwest::Client;
+use crate::{dto::new_user_dto::UserDTO, errors::microservices_errors::ParseError};
+use actix_web::{get, post, web, HttpResponse, Responder, Error};
+use serde_json::from_str;
+use crate::helpers::load_env;
 
-pub fn establish_connection() -> SqliteConnection {
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
+use crate::dto::insurance_dto::{
+    InsuranceGetDTO, 
+    InsuranceReceiveDTO, 
+    ClaimGetDTO, 
+    ClaimReceiveDTO, 
+    LogGetDTO,
+    LogReceiveDTO
+};
+
+pub async fn post_new_insurance(payment: web::Json<InsuranceReceiveDTO>) -> Result<String, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+    .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/insurance", url);
+    let response = client.post(&url)
+        .json(&payment)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    Ok(response)
 }
 
+pub async fn get_all_insurances() -> Result<InsuranceGetDTO, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+    .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
 
-
-pub fn get_insurance_details(insurance_id: i32) -> Result<InsuranceResponse, diesel::result::Error> {
-    let mut conn = establish_connection();
-    let insurance_data = insurances::table
-        .inner_join(insurance_types::table.on(insurance_types::id.eq(insurances::type_id.nullable())))
-        .inner_join(insurance_descriptions::table.on(insurance_descriptions::insurance_id.nullable().eq(insurances::id)))
-        .filter(insurances::id.eq(insurance_id))
-        .select((
-            insurances::title,
-            insurance_types::icon,
-            insurances::price,
-            insurances::contracted.nullable(), // Ajuste para Nullable
-            insurance_types::type_,
-            sql::<Text>("GROUP_CONCAT(insurance_descriptions.description, ',') AS description")
-        ))
-        .first::<(String, String, f64, Option<bool>, String, String)>(&mut conn)?;
-
-    // Separe as descrições e converta em um vetor
-    let (title, icon, price, contracted, insurance_type, description_str) = insurance_data;
-    let description = description_str.split(',').map(String::from).collect();
-
-    Ok(InsuranceResponse {
-        title,
-        icon,
-        price,
-        contracted: contracted.unwrap_or(false),
-        insurance_type,
-        description,
-    })
+    let url = format!("{}/insurance", url);
+    let response = client.get(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+        let insurance: InsuranceGetDTO = from_str(&response)?;
+        
+    Ok(insurance)
 }
 
-#[derive(Queryable, serde::Serialize)]
-pub struct Insurance {
-    pub id: Option<i32>,
-    pub title: String,
-    pub type_: String,
-    pub price: f64,
-    pub contracted: Option<bool>,
-    pub description: String, // Alteração aqui para Vec<String>
-    pub icon: String,
+pub async fn get_insurances_by_id(id: i32) -> Result<InsuranceGetDTO, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+    .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/insurance/{}", url, id);
+    let response = client.get(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+        let insurance: InsuranceGetDTO = from_str(&response)?;
+        
+    Ok(insurance)
 }
 
-#[derive(Queryable, serde::Serialize)]
-pub struct SaidaInsurances {
-    pub id: Option<i32>,
-    pub title: String,
-    pub type_: String,
-    pub price: f64,
-    pub contracted: Option<bool>,
-    pub description: Vec<String>, // Alteração aqui para Vec<String>
-    pub icon: String,
+pub async fn get_insurances_by_user_id(id: i32) -> Result<InsuranceGetDTO, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+    .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/insurance/user/{}", url, id);
+    let response = client.get(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+        let insurance: InsuranceGetDTO = from_str(&response)?;
+        
+    Ok(insurance)
 }
 
-#[derive(Queryable, QueryableByName, Selectable, Serialize)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-#[diesel(table_name = insurance_descriptions)]
-struct InsuranceDescription {
-    pub id: Option<i32>,
-    insurance_id: i32,
-    description: String,
+pub async fn update_insurance(id: i32, insurance: web::Json<InsuranceReceiveDTO>) -> Result<String, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+    .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/insurance/{}", url, id);
+    let response = client.put(&url)
+        .json(&insurance)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    Ok(response)
 }
 
-#[derive(Serialize, Queryable, Debug)]
-struct InsuranceWithDescriptions {
-    id: i32,
-    title: String,
-    price: f64,
-    contracted: Option<bool>,
-    type_: String,
-    icon: String,
-    descriptions: Vec<String>,
+pub async fn delete_insurance(id: i32) -> Result<String, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+    .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/insurance/{}", url, id);
+    let response = client.delete(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    Ok(response)
 }
 
-pub fn get_all_insurances() -> Result<Vec<SaidaInsurances>, diesel::result::Error> {
-    let mut conn = establish_connection();
+pub async fn post_new_claim(claim: web::Json<ClaimReceiveDTO>) -> Result<String, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
 
-    let results = insurances::table
-        .inner_join(insurance_types::table.on(insurances::type_id.nullable().eq(insurance_types::id)))
-        .inner_join(insurance_descriptions::table.on(insurances::id.nullable().eq(insurance_descriptions::insurance_id.nullable())))
-        .select((
-            insurances::id,
-            insurances::title,
-            insurance_types::type_,
-            insurances::price,
-            insurances::contracted,
-            insurance_descriptions::description,
-            insurance_types::icon,
-        ))
-        .load::<Insurance>(&mut conn)?;
-    let descriptions = insurance_descriptions::table
-            .select(InsuranceDescription::as_select())
-            .load::<InsuranceDescription>(&mut conn)?;
+    let url = format!("{}/claim", url);
+    let response = client.post(&url)
+        .json(&claim)
+        .send()
+        .await?
+        .text()
+        .await?;
 
+    Ok(response)
+}
 
-    let mut insurance_map: std::collections::HashMap<i32, InsuranceWithDescriptions> = std::collections::HashMap::new();
+pub async fn get_all_claims() -> Result<ClaimGetDTO, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
 
-    for insurance in results {
-        insurance_map.insert(
-            insurance.id.expect("Insurance ID should be present"),
-            InsuranceWithDescriptions {
-                id: insurance.id.expect("Insurance ID should be present"),
-                title: insurance.title,
-                price: insurance.price,
-                contracted: insurance.contracted,
-                type_: insurance.type_,
-                icon: insurance.icon,
-                descriptions: Vec::new(),
-            },
-        );
-    }
+    let url = format!("{}/claim", url);
+    let response = client.get(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+    let claims: ClaimGetDTO = from_str(&response)?;
 
-    for description in descriptions {
-        if let Some(insurance) = insurance_map.get_mut(&description.insurance_id) {
-            insurance.descriptions.push(description.description);
-        }
-    }
+    Ok(claims)
+}
 
-    Ok(insurance_map.into_iter().map(|(_, v)| SaidaInsurances {
-        id: Some(v.id),
-        title: v.title,
-        type_: v.type_,
-        price: v.price,
-        contracted: v.contracted,
-        description: v.descriptions,
-        icon: v.icon,
-    }).collect())
+pub async fn get_claim_by_id(id: i32) -> Result<ClaimGetDTO, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/claim/{}", url, id);
+    let response = client.get(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+    let claim: ClaimGetDTO = from_str(&response)?;
+
+    Ok(claim)
+}
+
+pub async fn update_claim(id: i32, claim: web::Json<ClaimReceiveDTO>) -> Result<String, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/claim/{}", url, id);
+    let response = client.put(&url)
+        .json(&claim)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    Ok(response)
+}
+
+pub async fn delete_claim(id: i32) -> Result<String, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/claim/{}", url, id);
+    let response = client.delete(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    Ok(response)
+}
+
+pub async fn get_claims_by_insurance_id(insurance_id: i32) -> Result<ClaimGetDTO, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/claim/insurance/{}", url, insurance_id);
+    let response = client.get(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+    let claims: ClaimGetDTO = from_str(&response)?;
+
+    Ok(claims)
+}
+
+pub async fn post_new_log(log: web::Json<LogReceiveDTO>) -> Result<String, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/log", url);
+    let response = client.post(&url)
+        .json(&log)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    Ok(response)
+}
+
+pub async fn get_all_logs() -> Result<LogGetDTO, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/log", url);
+    let response = client.get(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+    let logs: LogGetDTO = from_str(&response)?;
+
+    Ok(logs)
+}
+
+pub async fn get_log_by_id(id: i32) -> Result<LogGetDTO, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/log/{}", url, id);
+    let response = client.get(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+    let log: LogGetDTO = from_str(&response)?;
+
+    Ok(log)
+}
+
+pub async fn update_log(id: i32, log: web::Json<LogReceiveDTO>) -> Result<String, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/log/{}", url, id);
+    let response = client.put(&url)
+        .json(&log)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    Ok(response)
+}
+
+pub async fn delete_log(id: i32) -> Result<String, ParseError> {
+    let client = Client::new();
+    let url = String::from_utf8(load_env("MICROSERVICE_INSURANCES_URL".to_string()))
+        .expect("Invalid UTF-8 in MICROSERVICE_INSURANCES_URL");
+
+    let url = format!("{}/log/{}", url, id);
+    let response = client.delete(&url)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    Ok(response)
 }
