@@ -9,4 +9,11 @@ pub enum ParseError {
 
     #[error("Failed to parse JSON: {0}")]
     Serde(#[from] SerdeError), // Converts serde error
+
+    #[error("SQLx error: {0}")]
+    Sqlx(sqlx::Error),
+
+    #[error("{0}")]
+    Custom(String),
+
 }

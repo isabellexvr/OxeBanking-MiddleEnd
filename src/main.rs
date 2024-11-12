@@ -6,6 +6,10 @@ use actix_web::http::header;
 use dotenv::dotenv;
 use env_logger::Env;
 use std::future::{ready, Ready};
+use rusqlite::{params, Connection, Result};
+use serde::Serialize;
+use sqlx::sqlite::SqlitePool;
+
 
 use crate::controllers::auth_controller::sign_in;
 use crate::controllers::api_controller::call_external;
@@ -94,16 +98,36 @@ fn configure_app(cfg: &mut web::ServiceConfig) {
 }
 
 
+/* #[derive(Serialize)]
+struct Test {
+    id: i64,
+    name: String,
+    email: String,
+}
+
+async fn get_users(pool: web::Data<SqlitePool>) -> impl Responder {
+    let users = sqlx::query_as!(Test, "SELECT id, name, email FROM test")
+        .fetch_all(pool.get_ref())
+        .await
+        .unwrap();
+
+    web::Json(users)
+} */
+
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
 
+    
     dotenv().ok();
     env_logger::init_from_env(Env::default().default_filter_or("info"));
-
+    
+    let pool = SqlitePool::connect("sqlite://middle-mocked.db").await.unwrap();
     print_routes();
     
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         App::new()
+            .app_data(web::Data::new(pool.clone()))
             .wrap(RouteLogger)
             .wrap(
                 Cors::default()
