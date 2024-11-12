@@ -7,7 +7,6 @@ use dotenv::dotenv;
 use env_logger::Env;
 use std::future::{ready, Ready};
 use rusqlite::{params, Connection, Result};
-use serde::Serialize;
 use sqlx::sqlite::SqlitePool;
 
 
@@ -15,6 +14,7 @@ use crate::controllers::auth_controller::sign_in;
 use crate::controllers::api_controller::call_external;
 use crate::controllers::users_controller::sign_up;
 use crate::controllers::payments_controller::create_payment;
+use crate::controllers::insurances_controller::get_all_insurances_controller;
 use crate::middleware::auth_middleware::Auth;
 
 mod controllers;
@@ -26,6 +26,8 @@ mod microservices;
 mod models;
 mod errors;
 mod helpers;
+mod schema;
+mod repositories;
 
 struct RouteLogger;
 
@@ -94,30 +96,17 @@ fn configure_app(cfg: &mut web::ServiceConfig) {
             .wrap(Auth)
             .service(create_payment),
     );
+    cfg.service(
+        web::scope("/insurances")
+            .wrap(Auth)
+            .service(get_all_insurances_controller)
+    );
     cfg.route("/", web::get().to(health));
 }
 
 
-/* #[derive(Serialize)]
-struct Test {
-    id: i64,
-    name: String,
-    email: String,
-}
-
-async fn get_users(pool: web::Data<SqlitePool>) -> impl Responder {
-    let users = sqlx::query_as!(Test, "SELECT id, name, email FROM test")
-        .fetch_all(pool.get_ref())
-        .await
-        .unwrap();
-
-    web::Json(users)
-} */
-
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-
     
     dotenv().ok();
     env_logger::init_from_env(Env::default().default_filter_or("info"));
@@ -139,7 +128,7 @@ async fn main() -> std::io::Result<()> {
             )
             .configure(configure_app)
     })
-    .bind(("0.0.0.0", 3000))?
+    .bind(("0.0.0.0", 4200))?
     .run()
     .await
 

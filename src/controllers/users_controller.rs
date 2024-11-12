@@ -1,7 +1,7 @@
 use actix_web::{get, post, web, HttpResponse, Responder, Error};
 use log::error; // Importa função de log de erro
 use crate::dto::new_user_dto::UserDTO;
-use crate::microservices::admin::create_a_new_mocked_user;
+use crate::microservices::admin::insert_user;
 use bcrypt::{hash, DEFAULT_COST};
 use crate::services::auth_service::create_jwt_token;
 use crate::models::auth::AuthResponse;
@@ -18,10 +18,11 @@ async fn sign_up(credentials: web::Json<UserDTO>) -> impl Responder {
         ..credentials.into_inner() // Copy other fields from credentials
     };
 
-    match create_a_new_mocked_user(web::Json(user_info)).await {
+    match insert_user(user_info).await {
         Ok(response) => {
             // Microservice call was successful, return the response
-            let token = create_jwt_token(&response.full_name, response.id.try_into().unwrap(), &response.profile_pic).expect("Failed to create JWT token");
+            let user_id = response.id.expect("User ID is missing");
+            let token = create_jwt_token(&response.full_name, user_id, &response.profile_pic).expect("Failed to create JWT token");
             let res = AuthResponse {
                 auth_token: token,
             };
