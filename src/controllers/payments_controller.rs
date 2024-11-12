@@ -3,7 +3,6 @@ use crate::dto::payment_dto::PaymentDTO;
 use crate::dto::jwt::Claims;
 use crate::models::payment::Payment;
 use crate::microservices::payments::{post_new_payment, get_payment_by_id};
-use actix_web::HttpMessage;
 
 #[post("/new")]
 async fn create_payment(payment: web::Json<PaymentDTO>, req: HttpRequest) -> impl Responder {

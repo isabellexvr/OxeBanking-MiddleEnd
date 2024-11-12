@@ -4,6 +4,9 @@ use crate::models::user::{User, Address};
 use crate::dto::new_user_dto::UserDTO;
 use crate::schema::{users, addresses};
 use crate::errors::microservices_errors::ParseError;
+use crate::dto::jwt::Claims;
+use actix_web::{HttpRequest, Result, HttpMessage};
+
 
 pub fn establish_connection() -> SqliteConnection {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -25,6 +28,7 @@ pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<User>, ParseError> {
     Ok(result)
 }
 
+//authenticated route
 pub async fn get_user_by_id(id: i32) -> Result<Option<User>, ParseError> {
     use crate::schema::users::dsl::*;
 
@@ -86,4 +90,26 @@ pub async fn insert_user(user_info: UserDTO) -> Result<User, ParseError> {
         .map_err(|e| ParseError::Custom(e.to_string()))?;
 
     Ok(inserted_user)
+}
+
+pub async fn get_authenticated_user(req: HttpRequest) -> Result<User, ParseError> {
+    // Tenta recuperar as claims da extensão da requisição
+    if let Some(claims) = req.extensions().get::<Claims>() {
+        // Acessa o user_id armazenado nas claims
+        let user_id = claims.user_id;
+
+        let mut connection = establish_connection();
+        let user = users::table
+            .filter(users::id.eq(user_id))
+            .first::<User>(&mut connection)
+            .optional()
+            .map_err(|e| ParseError::Custom(e.to_string()))?;
+
+        match user {
+            Some(user) => Ok(user),
+            None => Err(ParseError::Custom("User not found".to_string())),
+        }
+    } else {
+        Err(ParseError::Custom("Missing or invalid token".to_string()))
+    }
 }

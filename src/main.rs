@@ -12,7 +12,7 @@ use sqlx::sqlite::SqlitePool;
 
 use crate::controllers::auth_controller::sign_in;
 use crate::controllers::api_controller::call_external;
-use crate::controllers::users_controller::sign_up;
+use crate::controllers::users_controller::{sign_up, get_user_info};
 use crate::controllers::payments_controller::create_payment;
 use crate::controllers::insurances_controller::get_all_insurances_controller;
 use crate::middleware::auth_middleware::Auth;
@@ -95,6 +95,11 @@ fn configure_app(cfg: &mut web::ServiceConfig) {
         web::scope("/payments")
             .wrap(Auth)
             .service(create_payment),
+    );
+    cfg.service(
+        web::scope("/auth")
+            .wrap(Auth)
+            .service(get_user_info),
     );
     cfg.service(
         web::scope("/insurances")

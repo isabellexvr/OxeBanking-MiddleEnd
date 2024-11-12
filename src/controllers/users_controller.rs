@@ -1,7 +1,7 @@
-use actix_web::{get, post, web, HttpResponse, Responder, Error};
+use actix_web::{get, post, web, HttpResponse, Responder, HttpRequest};
 use log::error; // Importa função de log de erro
 use crate::dto::new_user_dto::UserDTO;
-use crate::microservices::admin::insert_user;
+use crate::microservices::admin::{insert_user, get_authenticated_user};
 use bcrypt::{hash, DEFAULT_COST};
 use crate::services::auth_service::create_jwt_token;
 use crate::models::auth::AuthResponse;
@@ -42,3 +42,15 @@ async fn sign_up(credentials: web::Json<UserDTO>) -> impl Responder {
     //HttpResponse::Ok() // Return a JSON response
 }
 
+#[get("/user-info")]
+async fn get_user_info(req: HttpRequest) -> impl Responder {
+    let user = get_authenticated_user(req).await;
+    match user {
+        Ok(user_info) => HttpResponse::Ok().json(user_info),
+        Err(err) => {
+            let error_message = format!("Erro ao obter informações do usuário: {}", err);
+            error!("{}", error_message);
+            HttpResponse::InternalServerError().json(error_message)
+        }
+    }
+}
