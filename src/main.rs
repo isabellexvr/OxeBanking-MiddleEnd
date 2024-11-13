@@ -14,7 +14,7 @@ use crate::controllers::auth_controller::sign_in;
 use crate::controllers::api_controller::call_external;
 use crate::controllers::users_controller::{sign_up, get_user_info};
 use crate::controllers::payments_controller::create_payment;
-use crate::controllers::insurances_controller::get_all_insurances_controller;
+use crate::controllers::insurances_controller::{get_all_insurances_controller, get_all_mocked_insurances_controller};
 use crate::middleware::auth_middleware::Auth;
 
 mod controllers;
@@ -105,6 +105,7 @@ fn configure_app(cfg: &mut web::ServiceConfig) {
         web::scope("/insurances")
             .wrap(Auth)
             .service(get_all_insurances_controller)
+            .service(get_all_mocked_insurances_controller)
     );
     cfg.route("/", web::get().to(health));
 }
