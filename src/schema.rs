@@ -1,6 +1,24 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    account (id) {
+        id -> Nullable<Integer>,
+        user_id -> Integer,
+        balance -> Integer,
+        gross_mensal_income -> Integer,
+    }
+}
+
+diesel::table! {
+    account_pix_keys (id) {
+        id -> Nullable<Integer>,
+        account_id -> Integer,
+        pix_key -> Text,
+        key_type -> Text,
+    }
+}
+
+diesel::table! {
     addresses (id) {
         id -> Nullable<Integer>,
         zip_code -> Text,
@@ -11,6 +29,31 @@ diesel::table! {
         number -> Text,
         complement -> Nullable<Text>,
         is_main -> Bool,
+    }
+}
+
+diesel::table! {
+    br_account (id) {
+        id -> Nullable<Integer>,
+        account_id -> Integer,
+        account_number -> Text,
+        agency -> Text,
+        account_type -> Text,
+        bank_name -> Text,
+        bank_code -> Text,
+    }
+}
+
+diesel::table! {
+    global_account (id) {
+        id -> Nullable<Integer>,
+        account_id -> Integer,
+        account_number -> Text,
+        ach_routing_number -> Text,
+        wire_transfer_routing_number -> Text,
+        bank_name -> Text,
+        bank_code -> Text,
+        bank_address -> Text,
     }
 }
 
@@ -66,7 +109,11 @@ diesel::joinable!(insurances -> insurance_types (type_id));
 diesel::joinable!(users -> addresses (address_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    account,
+    account_pix_keys,
     addresses,
+    br_account,
+    global_account,
     insurance_descriptions,
     insurance_types,
     insurances,
