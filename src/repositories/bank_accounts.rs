@@ -8,11 +8,11 @@ use crate::errors::microservices_errors::ParseError;
 #[derive(Queryable, QueryableByName, Selectable, Serialize, Insertable)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 #[diesel(table_name = account)]
-struct Account {
-    id: Option<i32>,
-    user_id: i32,
-    balance: i32,
-    gross_mensal_income: i32,
+pub struct Account {
+    pub id: Option<i32>,
+    pub user_id: i32,
+    pub balance: i32,
+    pub gross_mensal_income: i32,
 }
 
 #[derive(Queryable, QueryableByName, Selectable, Serialize, Insertable)]
@@ -46,6 +46,7 @@ struct GlobalAccount {
 pub async fn create_new_account(user_id: i32) -> Result<String, ParseError> {
     let mut connection = establish_connection();
 
+
     // Insert into `account`
     diesel::insert_into(account::table)
         .values(&Account {
@@ -56,6 +57,7 @@ pub async fn create_new_account(user_id: i32) -> Result<String, ParseError> {
         })
         .execute(&mut connection)
         .map_err(|e| ParseError::Custom(e.to_string()))?;
+
     
     // Retrieve the last inserted account's ID
     let new_account_id: i32 = account::table
@@ -78,6 +80,7 @@ pub async fn create_new_account(user_id: i32) -> Result<String, ParseError> {
         })
         .execute(&mut connection)
         .map_err(|e| ParseError::Custom(e.to_string()))?;
+
 
     diesel::insert_into(global_account::table)
         .values(&GlobalAccount {

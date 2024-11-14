@@ -10,7 +10,7 @@ CREATE TABLE account_pix_keys (
     account_id INTEGER NOT NULL,
     pix_key TEXT NOT NULL,
     key_type TEXT NOT NULL,
-    FOREIGN KEY (account_id) REFERENCES account_bd(id)
+    FOREIGN KEY (account_id) REFERENCES account(id)
 );
 
 CREATE TABLE br_account (
@@ -21,7 +21,7 @@ CREATE TABLE br_account (
     account_type TEXT NOT NULL,
     bank_name TEXT NOT NULL,
     bank_code TEXT NOT NULL,
-    FOREIGN KEY (account_id) REFERENCES account_bd(id)
+    FOREIGN KEY (account_id) REFERENCES account(id)
 );
 
 CREATE TABLE global_account (
@@ -33,5 +33,5 @@ CREATE TABLE global_account (
     bank_name TEXT NOT NULL,
     bank_code TEXT NOT NULL,
     bank_address TEXT NOT NULL,
-    FOREIGN KEY (account_id) REFERENCES account_bd(id)
+    FOREIGN KEY (account_id) REFERENCES account(id)
 );

@@ -104,6 +104,9 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(account_pix_keys -> account (account_id));
+diesel::joinable!(br_account -> account (account_id));
+diesel::joinable!(global_account -> account (account_id));
 diesel::joinable!(insurance_descriptions -> insurances (insurance_id));
 diesel::joinable!(insurances -> insurance_types (type_id));
 diesel::joinable!(users -> addresses (address_id));

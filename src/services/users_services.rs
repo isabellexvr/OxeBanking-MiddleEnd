@@ -6,8 +6,9 @@ use crate::microservices::admin::{insert_user, get_authenticated_user};
 use bcrypt::{hash, DEFAULT_COST};
 use crate::services::auth_service::create_jwt_token;
 use crate::models::auth::AuthResponse;
+use crate::repositories::bank_accounts::{get_account_by_user_id, Account};
 
-async fn sign_up(credentials: web::Json<UserDTO>) -> impl Responder {
+pub async  fn sign_up(credentials: web::Json<UserDTO>) -> impl Responder {
     let hashed_password = hash(&credentials.user_password, DEFAULT_COST).expect("Failed to hash password");
 
     let user_info = UserDTO {
@@ -42,6 +43,18 @@ async fn sign_up(credentials: web::Json<UserDTO>) -> impl Responder {
             let error_message = format!("Erro do Microsserviço de Admin: {}", err);
             error!("{}", error_message);
             HttpResponse::InternalServerError().json(error_message)
+        }
+    }
+}
+
+pub async fn get_bank_account_info(user_id: i32) -> Result<Account, String> {
+    let account_info = get_account_by_user_id(user_id).await;
+    match account_info {
+        Ok(account) => Ok(account),
+        Err(err) => {
+            let error_message = format!("Erro ao obter informações da conta: {}", err);
+            error!("{}", error_message);
+            Err(error_message)
         }
     }
 }
