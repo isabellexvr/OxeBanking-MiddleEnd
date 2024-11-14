@@ -6,7 +6,8 @@ use crate::schema::{users, addresses};
 use crate::errors::microservices_errors::ParseError;
 use crate::dto::jwt::Claims;
 use actix_web::{HttpRequest, Result, HttpMessage};
-
+use serde::{Serialize, Deserialize};
+use crate::repositories::bank_accounts::get_user_balance;
 
 pub fn establish_connection() -> SqliteConnection {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -105,11 +106,32 @@ pub async fn insert_user(user_info: UserDTO) -> Result<User, ParseError> {
     Ok(inserted_user)
 }
 
-pub async fn get_authenticated_user(req: HttpRequest) -> Result<User, ParseError> {
-    // Tenta recuperar as claims da extensão da requisição
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UserInfos {
+    pub id: Option<i32>,
+    pub full_name: String,
+    pub profile_pic: Option<String>,
+    pub cpf: String,
+    pub birthdate: String,
+    pub marital_status: String,
+    pub gross_mensal_income: i32,
+    pub email: String,
+    pub phone_number: String,
+    pub is_admin: bool,
+    pub is_blocked: bool,
+    pub user_password: String,
+    pub address_id: i32,
+    pub created_at: String,
+    pub updated_at: String,
+    pub balance: i32, 
+}
+
+pub async fn get_authenticated_user(req: HttpRequest) -> Result<UserInfos, ParseError> {
+
     if let Some(claims) = req.extensions().get::<Claims>() {
-        // Acessa o user_id armazenado nas claims
+        
         let user_id = claims.user_id;
+        let user_balance = get_user_balance(user_id).await?;
 
         let mut connection = establish_connection();
         let user = users::table
@@ -119,7 +141,28 @@ pub async fn get_authenticated_user(req: HttpRequest) -> Result<User, ParseError
             .map_err(|e| ParseError::Custom(e.to_string()))?;
 
         match user {
-            Some(user) => Ok(user),
+            Some(user) => {
+                let user_infos = UserInfos {
+                    id: user.id,
+                    full_name: user.full_name,
+                    profile_pic: Some(user.profile_pic),
+                    cpf: user.cpf,
+                    birthdate: user.birthdate,
+                    marital_status: user.marital_status,
+                    gross_mensal_income: user.gross_mensal_income,
+                    email: user.email,
+                    phone_number: user.phone_number,
+                    is_admin: user.is_admin,
+                    is_blocked: user.is_blocked,
+                    user_password: user.user_password,
+                    address_id: user.address_id,
+                    created_at: user.created_at,
+                    updated_at: user.updated_at,
+                    balance: user_balance,
+                };
+
+                Ok(user_infos)
+            },
             None => Err(ParseError::Custom("User not found".to_string())),
         }
     } else {
