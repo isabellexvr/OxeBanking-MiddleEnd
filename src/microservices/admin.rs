@@ -28,6 +28,19 @@ pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<User>, ParseError> {
     Ok(result)
 }
 
+pub async fn get_username_by_id(id: i32) -> Result<String, ParseError> {
+    use crate::schema::users::dsl::*;
+
+    let mut connection = establish_connection();
+    let result = users
+        .filter(id.eq(id))
+        .select(full_name)
+        .first::<String>(&mut connection)
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
+
+    Ok(result)
+}
+
 //authenticated route
 pub async fn get_user_by_id(id: i32) -> Result<Option<User>, ParseError> {
     use crate::schema::users::dsl::*;

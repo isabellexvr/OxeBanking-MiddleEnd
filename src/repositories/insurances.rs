@@ -1,16 +1,10 @@
 use diesel::prelude::*;
-use diesel::sqlite::SqliteConnection;
 use crate::schema::{insurances, insurance_types, insurance_descriptions};
-use crate::errors::microservices_errors::ParseError;
 use diesel::dsl::sql;
 use crate::models::insurances::InsuranceResponse;
 use serde::{Serialize, Deserialize};
 use diesel::sql_types::Text;
-
-pub fn establish_connection() -> SqliteConnection {
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
-}
+use crate::repositories::connection::establish_connection;
 
 pub fn get_insurance_details(insurance_id: i32) -> Result<InsuranceResponse, diesel::result::Error> {
     let mut conn = establish_connection();
