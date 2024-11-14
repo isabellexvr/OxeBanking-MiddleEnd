@@ -14,6 +14,7 @@ pub async fn sign_in_service(credentials: web::Json<SignInDTO>) -> Result<(Strin
     match get_user_by_cpf(&credentials.cpf).await {
         Ok(Some(user)) => {
             // User was found, now verify the password
+            println!("User found: {:?}", user);
             if bcrypt_verify(&credentials.user_password, &user.user_password).map_err(|_| {
                 actix_web::error::ErrorInternalServerError("Incorrect Password")
             })? {

@@ -13,12 +13,12 @@ pub fn establish_connection() -> SqliteConnection {
     SqliteConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
 }
 
-pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<User>, ParseError> {
+pub async fn get_user_by_cpf(cpf_input: &str) -> Result<Option<User>, ParseError> {
     use crate::schema::users::dsl::*;
 
     let mut connection = establish_connection();
     let result = users
-        .filter(cpf.eq(cpf))
+        .filter(cpf.eq(cpf_input))
         .select(User::as_select())
         .first::<User>(&mut connection)
         .optional()

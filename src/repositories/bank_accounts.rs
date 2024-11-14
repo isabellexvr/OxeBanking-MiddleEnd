@@ -43,7 +43,7 @@ struct GlobalAccount {
 }
 
 
-pub async fn create_new_account(user_id: i32) -> Result<(), ParseError> {
+pub async fn create_new_account(user_id: i32) -> Result<String, ParseError> {
     let mut connection = establish_connection();
 
     // Insert into `account`
@@ -93,7 +93,7 @@ pub async fn create_new_account(user_id: i32) -> Result<(), ParseError> {
         .execute(&mut connection)
         .map_err(|e| ParseError::Custom(e.to_string()))?;
 
-    Ok(())
+    Ok("User created successfully!".to_string())
 }
 
 pub async fn get_account_by_user_id(user_id: i32) -> Result<Account, ParseError> {
