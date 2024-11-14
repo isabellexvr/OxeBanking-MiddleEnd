@@ -18,16 +18,20 @@ pub async fn sign_in_service(credentials: web::Json<SignInDTO>) -> Result<(Strin
                 actix_web::error::ErrorInternalServerError("Incorrect Password")
             })? {
                 // Passwords match, create a JWT token
-                match create_jwt_token(&user.full_name, user.id, &user.profile_pic) {
-                    Ok(token) => {
-                        // Return the user and token
-                        Ok((token))
-                    }
-                    Err(_) => {
-                        // Handle error in token creation
-                        Err(actix_web::error::ErrorInternalServerError("Error creating token"))
-                    }
+                match user.id {
+                    Some(id) => match create_jwt_token(&user.full_name, id, &user.profile_pic) {
+                        Ok(token) => {
+                            // Return the user and token
+                            Ok((token))
+                        }
+                        Err(_) => {
+                            // Handle error in token creation
+                            Err(actix_web::error::ErrorInternalServerError("Error creating token"))
+                        }
+                    },
+                    None => Err(actix_web::error::ErrorInternalServerError("User ID is missing")),
                 }
+                
             } else {
                 // Passwords do not match
                 Err(actix_web::error::ErrorUnauthorized("Invalid password")) // Return unauthorized error

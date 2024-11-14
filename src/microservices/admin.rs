@@ -1,95 +1,128 @@
-use reqwest::Client;
-use crate::{dto::new_user_dto::UserDTO, errors::microservices_errors::ParseError};
-use actix_web::{get, post, web, HttpResponse, Responder, Error};
+use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
 use crate::models::user::{User, Address};
-use serde_json::from_str;
+use crate::dto::new_user_dto::UserDTO;
+use crate::schema::{users, addresses};
+use crate::errors::microservices_errors::ParseError;
+use crate::dto::jwt::Claims;
+use actix_web::{HttpRequest, Result, HttpMessage};
 
-pub async fn create_a_new_user(credentials: web::Json<UserDTO>) -> Result<String, ParseError> {
-    // Create an HTTP client
-    let client = Client::new();
 
-    // Make the POST request to create a new user
-    let response = client
-        .post("http://localhost:8081/users") // API endpoint
-        .json(&credentials) // Send credentials as JSON in the body
-        .send()
-        .await
-        .map_err(ParseError::Reqwest)?; // Convert reqwest error to ParseError
-
-    // Get the response body as text
-    let text = response.text().await.map_err(ParseError::Reqwest)?; // Convert reqwest error to ParseError
-
-    Ok(text) // Return the response text
+pub fn establish_connection() -> SqliteConnection {
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    SqliteConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
 }
-
-
-pub async fn get_all_users() -> Result<Vec<User>, ParseError> {
-    // Create an HTTP client
-    let client = Client::new();
-
-    // Make the GET request to fetch users
-    let response = client
-        .get("http://localhost:8081/users") // API endpoint
-        .send()
-        .await
-        .map_err(ParseError::Reqwest)?; // Convert reqwest error to ParseError
-
-    let body = response.text().await.map_err(ParseError::Reqwest)?; // Convert reqwest error to ParseError
-
-    let users: Vec<User> = from_str(&body).map_err(ParseError::Serde)?; // Convert serde error to ParseError
-
-    Ok(users)
-}
-
-pub async fn get_user_by_id(id: i32) -> Result<Option<User>, ParseError> {
-    // Create an HTTP client
-    let client = Client::new();
-
-    // Build the URL using the format! macro
-    let url = format!("http://localhost:8081/users/{}", id);
-
-    // Make the GET request to fetch the user
-    let response = client.get(&url).send().await.map_err(ParseError::Reqwest)?;
-
-    // Check if the response status indicates success
-    if response.status().is_success() {
-        // Deserialize the response body into User
-        let user: User = response.json().await.map_err(ParseError::Reqwest)?; // Correctly mapping the serde error
-        Ok(Some(user)) // User found
-    } else {
-        Ok(None) // User not found
-    }
-}
-
 
 pub async fn get_user_by_cpf(cpf: &str) -> Result<Option<User>, ParseError> {
-    let mocked_user = User {
-        id: 1,
-        full_name: "John Doe".to_string(),
-        profile_pic: "https://example.com/profile.jpg".to_string(),
-        cpf: "123.456.789-00".to_string(),
-        birthdate: "1990-01-01".to_string(),
-        marital_status: "Single".to_string(),
-        gross_mensal_income: 5000,
-        email: "example@gmail.com".to_string(),
-        phone_number: "+55 11 99999-9999".to_string(),
-        is_admin: false,
-        is_blocked: false,
-        user_password: "$2b$12$QgGfGwKNepVKIxAaglKLVOqv4CvGKpYxVMERNRltfvLuCvXUVOeRW".to_string(), //senha123
-        created_at: "2021-01-01".to_string(),
-        updated_at: "2021-01-01".to_string(),
-        address: Address {
-            id: 1,
-            zip_code: "12345-678".to_string(),
-            city: "City".to_string(),
-            state: "State".to_string(),
-            uf: "ST".to_string(),
-            street: "Street".to_string(),
-            number: "123".to_string(),
-            complement: Some("Complement".to_string()),
-            is_main: true,
-        },
-    };
+    use crate::schema::users::dsl::*;
 
-    Ok(Some(mocked_user))
+    let mut connection = establish_connection();
+    let result = users
+        .filter(cpf.eq(cpf))
+        .select(User::as_select())
+        .first::<User>(&mut connection)
+        .optional()
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
+
+
+    Ok(result)
+}
+
+pub async fn get_username_by_id(id: i32) -> Result<String, ParseError> {
+    use crate::schema::users::dsl::*;
+
+    let mut connection = establish_connection();
+    let result = users
+        .filter(id.eq(id))
+        .select(full_name)
+        .first::<String>(&mut connection)
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
+
+    Ok(result)
+}
+
+//authenticated route
+pub async fn get_user_by_id(id: i32) -> Result<Option<User>, ParseError> {
+    use crate::schema::users::dsl::*;
+
+    let mut connection = establish_connection();
+    let result = users
+        .filter(id.eq(id))
+        .select(User::as_select())
+        .first::<User>(&mut connection)
+        .optional()
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
+
+    Ok(result)
+}
+
+pub async fn insert_user(user_info: UserDTO) -> Result<User, ParseError> {
+    use crate::schema::users::dsl::*;
+
+    let mut connection = establish_connection();
+
+    let created_address_id = diesel::insert_into(addresses::table)
+        .values(&Address {
+            id: None,
+            is_main: true,
+            street: user_info.address.street.clone(),
+            uf: user_info.address.uf.clone(),
+            number: user_info.address.number.clone(),
+            complement: user_info.address.complement.clone(),
+            city: user_info.address.city.clone(),
+            state: user_info.address.state.clone(),
+            zip_code: user_info.address.zip_code.clone(),
+        })
+        .execute(&mut connection)
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
+
+    diesel::insert_into(users)
+        .values(&User {
+            id: None,
+            full_name: user_info.full_name.clone(),
+            profile_pic: user_info.profile_pic.clone(),
+            cpf: user_info.cpf.clone(),
+            birthdate: user_info.birthdate.clone(),
+            marital_status: user_info.marital_status.clone(),
+            gross_mensal_income: user_info.gross_mensal_income as i32,
+            email: user_info.email.clone(),
+            phone_number: user_info.phone_number.clone(),
+            is_admin: user_info.is_admin,
+            is_blocked: user_info.is_blocked,
+            user_password: user_info.user_password.clone(),
+            address_id: created_address_id as i32,
+            created_at: "".to_string(),
+            updated_at: "".to_string(),
+        })
+        .execute(&mut connection)
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
+
+    let inserted_user = users
+        .order(id.desc())
+        .first::<User>(&mut connection)
+        .map_err(|e| ParseError::Custom(e.to_string()))?;
+
+    Ok(inserted_user)
+}
+
+pub async fn get_authenticated_user(req: HttpRequest) -> Result<User, ParseError> {
+    // Tenta recuperar as claims da extensão da requisição
+    if let Some(claims) = req.extensions().get::<Claims>() {
+        // Acessa o user_id armazenado nas claims
+        let user_id = claims.user_id;
+
+        let mut connection = establish_connection();
+        let user = users::table
+            .filter(users::id.eq(user_id))
+            .first::<User>(&mut connection)
+            .optional()
+            .map_err(|e| ParseError::Custom(e.to_string()))?;
+
+        match user {
+            Some(user) => Ok(user),
+            None => Err(ParseError::Custom("User not found".to_string())),
+        }
+    } else {
+        Err(ParseError::Custom("Missing or invalid token".to_string()))
+    }
 }

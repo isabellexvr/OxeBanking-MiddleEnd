@@ -6,11 +6,15 @@ use actix_web::http::header;
 use dotenv::dotenv;
 use env_logger::Env;
 use std::future::{ready, Ready};
+use rusqlite::{params, Connection, Result};
+use sqlx::sqlite::SqlitePool;
+
 
 use crate::controllers::auth_controller::sign_in;
 use crate::controllers::api_controller::call_external;
-use crate::controllers::users_controller::sign_up;
+use crate::controllers::users_controller::{sign_up, get_user_info};
 use crate::controllers::payments_controller::create_payment;
+use crate::controllers::insurances_controller::{get_all_insurances_controller, get_all_mocked_insurances_controller};
 use crate::middleware::auth_middleware::Auth;
 
 mod controllers;
@@ -22,6 +26,8 @@ mod microservices;
 mod models;
 mod errors;
 mod helpers;
+mod schema;
+mod repositories;
 
 struct RouteLogger;
 
@@ -90,20 +96,33 @@ fn configure_app(cfg: &mut web::ServiceConfig) {
             .wrap(Auth)
             .service(create_payment),
     );
+    cfg.service(
+        web::scope("/auth")
+            .wrap(Auth)
+            .service(get_user_info),
+    );
+    cfg.service(
+        web::scope("/insurances")
+            .wrap(Auth)
+            .service(get_all_insurances_controller)
+            .service(get_all_mocked_insurances_controller)
+    );
     cfg.route("/", web::get().to(health));
 }
 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-
+    
     dotenv().ok();
     env_logger::init_from_env(Env::default().default_filter_or("info"));
-
+    
+    let pool = SqlitePool::connect("sqlite://middle-mocked.db").await.unwrap();
     print_routes();
     
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         App::new()
+            .app_data(web::Data::new(pool.clone()))
             .wrap(RouteLogger)
             .wrap(
                 Cors::default()
@@ -115,7 +134,7 @@ async fn main() -> std::io::Result<()> {
             )
             .configure(configure_app)
     })
-    .bind(("0.0.0.0", 3000))?
+    .bind(("0.0.0.0", 4200))?
     .run()
     .await
 
