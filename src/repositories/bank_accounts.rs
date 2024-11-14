@@ -43,7 +43,7 @@ struct GlobalAccount {
 }
 
 
-pub async fn create_new_account(user_id: i32) -> Result<String, ParseError> {
+pub async fn create_new_account(user_id: i32, gross_mensal_income: i64) -> Result<String, ParseError> {
     let mut connection = establish_connection();
 
 
@@ -53,7 +53,7 @@ pub async fn create_new_account(user_id: i32) -> Result<String, ParseError> {
             id: None,
             user_id,
             balance: 0,
-            gross_mensal_income: 0,
+            gross_mensal_income: gross_mensal_income as i32,
         })
         .execute(&mut connection)
         .map_err(|e| ParseError::Custom(e.to_string()))?;

@@ -15,13 +15,14 @@ pub async  fn sign_up(credentials: web::Json<UserDTO>) -> impl Responder {
         user_password: hashed_password, 
         ..credentials.into_inner() 
     };
+    let user_info_clone = user_info.clone();
 
     match insert_user(user_info).await {
         Ok(response) => {
             // Microservice call was successful, return the response
             let user_id = response.id.expect("User ID is missing");
 
-            let account_creation_result = create_new_account(user_id).await;
+            let account_creation_result = create_new_account(user_id, user_info_clone.gross_mensal_income).await;
 
             match account_creation_result {
                 Ok(_) => {

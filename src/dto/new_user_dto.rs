@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Address {
     pub zip_code: String,
     pub city: String,
@@ -12,7 +12,7 @@ pub struct Address {
     pub is_main: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserDTO {
     pub full_name: String,
     pub profile_pic: String,
