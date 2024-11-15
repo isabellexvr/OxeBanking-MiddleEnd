@@ -11,6 +11,7 @@ use crate::controllers::users_controller::{sign_up, get_user_info, get_account_i
 use crate::controllers::payments_controller::create_payment;
 use crate::controllers::insurances_controller::{get_all_insurances_controller, get_all_mocked_insurances_controller};
 use crate::middleware::auth_middleware::Auth;
+use crate::controllers::credit_card_controllers::{request_new_credit_card, get_credit_card_info, update_credit_card_limit_route};
 
 mod controllers;
 mod services;
@@ -51,6 +52,13 @@ fn configure_app(cfg: &mut web::ServiceConfig) {
             .service(get_all_insurances_controller)
             .service(get_all_mocked_insurances_controller)
     );
+    cfg.service(
+        web::scope("/credit-card")
+            .wrap(Auth)
+            .service(request_new_credit_card)
+            .service(get_credit_card_info)
+            .service(update_credit_card_limit_route)
+    );
     cfg.route("/", web::get().to(health));
 }
 
@@ -69,7 +77,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 Cors::default()
                     .allow_any_origin()
-                    .allowed_methods(vec!["GET", "POST"])
+                    .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "PATCH"])
                     .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
                     .allowed_header(header::CONTENT_TYPE)
                     .max_age(3600),
