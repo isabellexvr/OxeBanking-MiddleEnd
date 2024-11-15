@@ -4,3 +4,4 @@ pub mod signin_dto;
 pub mod payment_dto;
 pub mod insurance_dto;
 pub mod credit_card_dto;
+pub mod consortia_dto;

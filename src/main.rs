@@ -12,6 +12,7 @@ use crate::controllers::payments_controller::create_payment;
 use crate::controllers::insurances_controller::{get_all_insurances_controller, get_all_mocked_insurances_controller};
 use crate::middleware::auth_middleware::Auth;
 use crate::controllers::credit_card_controllers::{request_new_credit_card, get_credit_card_info, update_credit_card_limit_route};
+use crate::controllers::consortia_controller::{get_all_consortia_controller, post_new_consortium_controller, add_participant_controller, get_consortium_participants_controller, get_consortium_by_user_id_controller, delete_consortium_controller, contemplate_consortium_controller};
 
 mod controllers;
 mod services;
@@ -58,6 +59,18 @@ fn configure_app(cfg: &mut web::ServiceConfig) {
             .service(request_new_credit_card)
             .service(get_credit_card_info)
             .service(update_credit_card_limit_route)
+    );
+    cfg.service(
+        web::scope("/consortia")
+            .wrap(Auth)
+            .service(get_all_consortia_controller)
+            .service(post_new_consortium_controller)
+            .service(add_participant_controller)
+            .service(get_consortium_participants_controller)
+            .service(get_consortium_by_user_id_controller)
+            .service(delete_consortium_controller)
+            .service(contemplate_consortium_controller)
+
     );
     cfg.route("/", web::get().to(health));
 }

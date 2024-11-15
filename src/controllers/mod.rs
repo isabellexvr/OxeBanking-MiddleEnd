@@ -4,3 +4,4 @@ pub mod users_controller;
 pub mod payments_controller;
 pub mod insurances_controller;
 pub mod credit_card_controllers;
+pub mod consortia_controller;
