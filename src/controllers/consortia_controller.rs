@@ -23,17 +23,6 @@ async fn post_new_consortium_controller(consortium: web::Json<ConsortiumDTO>) ->
     }
 }
 
-#[post("/add/participant/{id}/{participant_id}")]
-async fn add_participant_controller(path: web::Path<(i32, i32)>) -> impl Responder {
-    let (id, participant_id) = path.into_inner();
-    let microserviceRes = add_participant_to_consortium(id, participant_id).await;
-
-    match microserviceRes {
-        Ok(response) => HttpResponse::Ok().body(response),
-        Err(err) => HttpResponse::InternalServerError().body(format!("Error: {:?}", err)),
-    }
-}
-
 #[get("/participants/{id}")]
 async fn get_consortium_by_user_id_controller(path: web::Path<i32>) -> impl Responder {
     let id = path.into_inner();
