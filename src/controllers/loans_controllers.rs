@@ -5,7 +5,7 @@ use crate::microservices::loans::{request_loan, get_loan_request_by_user_id, get
 use crate::dto::loans_dto::{LoansRequestDTO, LoansRequestResponseDTO};
 
 #[post("/new-request")]
-async fn request_new_loan(req:HttpRequest, loan_info: web::Json<LoansRequestDTO>) -> impl Responder {
+async fn request_new_loan(req:HttpRequest, loan_info: web::Json<LoansRequestDTO>) -> Result<HttpResponse, Error> {
 
     if let Some(claims) = req.extensions().get::<Claims>() {
         let user_id = claims.user_id;
