@@ -49,7 +49,7 @@ limiteTotal (Double) - Novo limite total a ser definido
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreditCardDTO {
-    pub id: i32,
+    pub id: Option<i32>,
     pub numeroCartao: String,
     pub cvv: String,
     pub dataValidade: String,
@@ -57,5 +57,17 @@ pub struct CreditCardDTO {
     pub status: String,
     pub limiteTotal: f64,
     pub idUsuario: i32,
+    pub closingDay: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreditCardNoUserId {
+    pub id: i32,
+    pub numeroCartao: String,
+    pub cvv: String,
+    pub dataValidade: String,
+    pub limiteDisponivel: f64,
+    pub status: String,
+    pub limiteTotal: f64,
     pub closingDay: i32,
 }
