@@ -21,9 +21,9 @@ async fn request_new_loan(req:HttpRequest, loan_info: web::Json<LoansRequestDTO>
                 Ok(response) => HttpResponse::Ok().body(response),
                 Err(err) => HttpResponse::InternalServerError().body(format!("Error: {:?}", err)),
             };
-            return response;
+            return Ok(response);
         } else {
-            return HttpResponse::Unauthorized().body("Unauthorized");
+            return Ok(HttpResponse::Unauthorized().body("Unauthorized"));
         }
 }
 
@@ -44,7 +44,7 @@ async fn get_loan_request_info(req:HttpRequest) -> impl Responder {
 }
 
 #[get("/request/info/{id}")]
-async fn get_loan_request_info_by_id(req:HttpRequest) -> impl Responder {
+async fn get_loan_request_info_by_id_route(req:HttpRequest) -> impl Responder {
     if let Some(claims) = req.extensions().get::<Claims>() {
         let user_id = claims.user_id;
         let id = req.match_info().get("id").unwrap().parse::<i32>().unwrap();
@@ -64,7 +64,7 @@ async fn get_loan_request_info_by_id(req:HttpRequest) -> impl Responder {
 }
 
 #[get("/request/delete/{id}")]
-async fn delete_loan_request_by_id(req:HttpRequest) -> impl Responder {
+async fn delete_loan_request_by_id_route(req:HttpRequest) -> impl Responder {
     if let Some(claims) = req.extensions().get::<Claims>() {
         let user_id = claims.user_id;
         let id = req.match_info().get("id").unwrap().parse::<i32>().unwrap();
